@@ -1,0 +1,39 @@
+<!-- proj/app/templates/index.html -->
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Comparação de Algoritmos de Caminho Mínimo</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <!-- Folium requer estas dependências -->
+    {{ map_html | safe }}
+</head>
+<body>
+    <h1>Comparação de Algoritmos de Caminho Mínimo</h1>
+    <form method="POST">
+        <label for="address">Endereço de Origem:</label>
+        <input type="text" id="address" name="address" required>
+
+        <label for="num_destinations">Número de Destinos:</label>
+        <input type="number" id="num_destinations" name="num_destinations" min="1" required>
+
+        <label for="algorithm">Algoritmo:</label>
+        <select id="algorithm" name="algorithm">
+            <option value="dijkstra">Dijkstra</option>
+            <option value="astar">A*</option>
+            <option value="bellman_ford">Bellman-Ford</option>
+        </select>
+
+        <button type="submit">Calcular Rotas</button>
+    </form>
+
+    {% if total_time %}
+        <p>Tempo Total de Execução: {{ total_time }} segundos</p>
+    {% endif %}
+
+    <div id="map">
+        <!-- O mapa será renderizado aqui -->
+    </div>
+</body>
+</html>

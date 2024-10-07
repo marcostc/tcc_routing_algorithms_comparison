@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+  <tag_name name="highway" id="1">
+    <tag_value name="road" id="100" />
+    <tag_value name="motorway" id="101" />
+    <tag_value name="motorway_link" id="102" />
+    <tag_value name="motorway_junction" id="103" />
+    <tag_value name="trunk" id="104" />
+    <tag_value name="trunk_link" id="105" />    
+    <tag_value name="primary" id="106" />
+    <tag_value name="primary_link" id="107" />    
+    <tag_value name="secondary" id="108" />
+    <tag_value name="tertiary" id="109" />
+    <tag_value name="residential" id="110" />
+    <tag_value name="living_street" id="111" />
+    <tag_value name="service" id="112" />
+    <tag_value name="track" id="113" />
+    <tag_value name="pedestrian" id="114" />
+    <tag_value name="services" id="115" />
+    <tag_value name="bus_guideway" id="116" />
+    <tag_value name="path" id="117" />
+    <tag_value name="cycleway" id="118" />
+    <tag_value name="footway" id="119" />
+    <tag_value name="bridleway" id="120" />
+    <tag_value name="byway" id="121" />
+    <tag_value name="steps" id="122" />
+    <tag_value name="unclassified" id="123" />
+    <tag_value name="secondary_link" id="124" />
+    <tag_value name="tertiary_link" id="125" />
+  </tag_name>
+  <!-- the following lines are only evaluated if there is no highway-tag at the way -->
+  <tag_name name="cycleway" id="2">
+    <tag_value name="lane" id="200" />
+    <tag_value name="track" id="201" />
+    <tag_value name="opposite_lane" id="202" />
+    <tag_value name="opposite" id="203" />
+  </tag_name>  
+  <tag_name name="tracktype" id="3">
+    <tag_value name="grade1" id="300" />
+    <tag_value name="grade2" id="301" />
+    <tag_value name="grade3" id="302" />
+    <tag_value name="grade4" id="303" />
+    <tag_value name="grade5" id="304" />
+  </tag_name>  
+  <!-- Importar interseções de trânsito -->
+  <tag_name name="junction" id="4">
+    <tag_value name="roundabout" id="400" />
+    <tag_value name="intersection" id="401" />
+  </tag_name>  
+  <!-- Importar pontos de interesse -->
+  <tag_name name="amenity" id="5">
+    <tag_value name="school" id="500" />
+    <tag_value name="hospital" id="501" />
+    <tag_value name="restaurant" id="502" />
+    <tag_value name="cafe" id="503" />
+    <tag_value name="bank" id="504" />
+    <tag_value name="post_office" id="505" />
+    <tag_value name="parking" id="506" />
+    <tag_value name="fuel" id="507" />
+    <tag_value name="library" id="508" />
+    <tag_value name="police" id="509" />
+  </tag_name>
+  <!-- Importar tipos de edifícios e construções -->
+  <tag_name name="building" id="6">
+    <!-- <tag_value name="yes" id="600" /> -->
+    <tag_value name="residential" id="601" />
+    <tag_value name="commercial" id="602" />
+    <tag_value name="industrial" id="603" />
+    <tag_value name="retail" id="604" />
+    <tag_value name="church" id="605" />
+    <tag_value name="school" id="606" />
+  </tag_name>
+  <!-- Importar endereços -->
+  <tag_name name="addr:street" id="7">
+    <tag_value name="yes" id="700" />
+  </tag_name>
+  <tag_name name="addr:housenumber" id="8">
+    <tag_value name="yes" id="800" />
+  </tag_name>
+  <tag_name name="addr:postcode" id="9">
+    <tag_value name="yes" id="900" />
+  </tag_name>
+  <tag_name name="addr:city" id="10">
+    <tag_value name="yes" id="1000" />
+  </tag_name>
+  <tag_name name="addr:country" id="11">
+    <tag_value name="yes" id="1100" />
+  </tag_name>
+  <!-- Importar uso do solo -->
+  <tag_name name="landuse" id="12">
+    <tag_value name="residential" id="1200" />
+    <tag_value name="commercial" id="1201" />
+    <tag_value name="industrial" id="1202" />
+    <tag_value name="forest" id="1203" />
+    <tag_value name="meadow" id="1204" />
+    <tag_value name="farm" id="1205" />
+  </tag_name>
+  <!-- Importar faixas de pedestres -->
+  <tag_name name="footway" id="14">
+    <tag_value name="sidewalk" id="1400" />
+    <tag_value name="crossing" id="1401" />
+  </tag_name>
+  <tag_name name="cuisine" id="15">
+    <tag_value name="pizza" id="1500" />
+    <tag_value name="burger" id="1514" />
+    <tag_value name="arab" id="1505" />
+    <tag_value name="asian" id="1506" />
+    <tag_value name="baiana" id="1507" />
+    <tag_value name="bar" id="1508" />
+    <tag_value name="barbecue" id="1509" />
+    <tag_value name="brazilian" id="1512" />
+    <tag_value name="brasileira" id="1511" />
+    <tag_value name="chicken" id="1518" />
+    <tag_value name="chinese" id="1519" />
+    <tag_value name="Churrasco" id="1520" />
+    <tag_value name="crepe" id="1524" />
+    <tag_value name="french" id="1527" />
+    <tag_value name="german" id="1529" />
+    <tag_value name="italian" id="1533" />
+    <tag_value name="japanese" id="1534" />
+    <tag_value name="nordestina" id="1540" />
+    <tag_value name="pastel" id="1541" />
+    <tag_value name="peruvian" id="1542" />
+    <tag_value name="regional" id="1547" />
+    <tag_value name="sandwich" id="1550" />
+    <tag_value name="seafood" id="1551" />
+    <tag_value name="coffee_shop" id="1521" />
+    <tag_value name="middle_eastern" id="1538" />
+    <tag_value name="self_service" id="1555" />
+    <tag_value name="steak_grill" id="1556" />
+    <tag_value name="steak_house" id="1557" />
+    <tag_value name="bbq,pizza" id="1510" />
+    <tag_value name="american;steak" id="1504" />
+    <tag_value name="brazilian;barbecue;grill;steak_house" id="1513" />
+    <tag_value name="burger;hot_dog" id="1515" />
+    <tag_value name="burger;pizza;chicken;sandwich" id="1516" />
+    <tag_value name="burger;pizza;coffee_shop;sandwich" id="1517" />
+    <tag_value name="coffee_shop;cake;chocolate" id="1523" />
+    <tag_value name="fish_and_chips" id="1526" />
+    <tag_value name="fried_food" id="1528" />
+    <tag_value name="hot_dog" id="1530" />
+    <tag_value name="international;arabic;salad" id="1531" />
+    <tag_value name="international;italian" id="1532" />
+    <tag_value name="japanese;burger" id="1535" />
+    <tag_value name="japanese;indian;thai" id="1536" />
+    <tag_value name="japanese;mexican" id="1537" />
+    <tag_value name="middle_eastern;dessert" id="1539" />
+    <tag_value name="pizza;pasta" id="1544" />
+    <tag_value name="pizza;regional" id="1545" />
+    <tag_value name="pizza;regional;kilo" id="1546" />
+    <tag_value name="regional;fish_and_chips" id="1548" />
+    <tag_value name="seafood;pizza;regional" id="1552" />
+    <tag_value name="seafood;regional" id="1553" />
+    <tag_value name="seafood;regional;fish;dessert" id="1554" />
+    <tag_value name="açaí" id="1501" />
+    <tag_value name="açai;burger" id="1502" />
+    <tag_value name="almoço_expresso" id="1503" />
+    <tag_value name="regional;regional_do_pará;açaí_natural_do_pará;tambaqui;tacacá;vatapá;suco_de_cupuaçu" id="1549" />
+    <tag_value name="petiscos;tira-gostos;batatas_fritas;sanduíches" id="1543" />
+    <tag_value name="culinária_do_brasil" id="1525" />
+    <tag_value name="coffee_shop;almoço" id="1522" />
+  </tag_name>
+</configuration>

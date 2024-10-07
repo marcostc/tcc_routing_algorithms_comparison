@@ -1,0 +1,61 @@
+services:
+  db:
+    build:
+      context: ./db
+    container_name: db
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASS}
+
+  osm2pgrouting:
+    build:
+      context: ./osm2pgrouting
+    container_name: osm2pgrouting
+    depends_on:
+      - db
+    environment:
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASS=${DB_PASS}
+      - DB_HOST=db
+    volumes:
+      - ./db/rio_de_janeiro_parte.osm:/data/rio_de_janeiro_parte.osm
+      - ./db/mapconfig.xml:/data/mapconfig.xml
+
+  app:
+    build:
+      context: ./app
+    container_name: app
+    ports:
+      - "5000:5000"
+    environment:
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASS=${DB_PASS}
+      - DB_HOST=db
+    depends_on:
+      - db
+      - osm2pgrouting
+
+  jupyter:
+    build:
+      context: ./jupyter
+    container_name: jupyter
+    ports:
+      - "8888:8888"
+    environment:
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASS=${DB_PASS}
+      - DB_HOST=db
+    depends_on:
+      - db
+      - osm2pgrouting
+
+volumes:
+  db_data:

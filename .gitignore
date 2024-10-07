@@ -1,0 +1,18 @@
+# proj/.gitignore
+
+# Python
+__pycache__/
+*.pyc
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+
+# Environment
+.env
+
+# Data
+db/*.osm
+db/*.sql
+
+# Docker
+db_data/

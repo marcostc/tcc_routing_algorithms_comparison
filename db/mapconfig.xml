@@ -1,0 +1,50 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<osm2pgrouting>
+  <tags>
+    <filter>
+      <!-- Filtra apenas as vias que são relevantes para roteamento -->
+      <accept-nodes/>
+      <accept-ways>
+        highway
+      </accept-ways>
+      <accept-relations/>
+    </filter>
+    <ignore>
+      <!-- Ignorar algumas vias irrelevantes -->
+      <way>highway=proposed</way>
+      <way>highway=construction</way>
+    </ignore>
+  </tags>
+
+  <types>
+    <!-- Definir os tipos de vias e seus atributos -->
+    <!-- Você pode adicionar mais tipos conforme necessário -->
+    <type name="primary" id="1" priority="1.0"/>
+    <type name="secondary" id="2" priority="1.0"/>
+    <!-- ... -->
+  </types>
+
+  <columns>
+    <!-- Colunas adicionais para serem importadas -->
+    <column name="cuisine" source="way" type="text"/>
+    <column name="oneway" source="way" type="text"/>
+    <!-- ... -->
+  </columns>
+
+  <way_query>
+    <!-- Consulta personalizada para extrair informações das vias -->
+    SELECT
+      way.id AS id,
+      way.source,
+      way.target,
+      way.length AS cost,
+      CASE
+        WHEN way.oneway = 'yes' THEN way.length
+        ELSE 1000000
+      END AS reverse_cost,
+      way.geom_way AS the_geom,
+      way.cuisine
+    FROM ways AS way
+    WHERE way.cuisine IS NOT NULL;
+  </way_query>
+</osm2pgrouting>

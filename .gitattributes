@@ -1,0 +1,31 @@
+# Normalizar automaticamente os finais de linha para texto
+* text=auto
+
+# Declarar explicitamente arquivos de texto que devem sempre ser normalizados e convertidos
+# para finais de linha nativos no checkout.
+*.c text
+*.h text
+
+# Declarar arquivos que sempre terão finais de linha LF no checkout.
+# Esses são arquivos usados em ambientes Unix/Linux.
+*.sh text eol=lf
+*.py text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.Dockerfile text eol=lf
+Dockerfile text eol=lf
+docker-compose.yml text eol=lf
+*.css text eol=lf
+*.js text eol=lf
+*.html text eol=lf
+
+# Arquivos binários devem ser tratados como binários e não modificados.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.docx binary
+
+# Para notebooks Jupyter, que são arquivos JSON, você pode aplicar LF.
+*.ipynb text eol=lf
