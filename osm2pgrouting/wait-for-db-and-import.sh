@@ -19,6 +19,9 @@ osm2pgrouting \
     -h "$DB_HOST" \
     -p 5432 \
     -W "$DB_PASS" \
+    --addnodes \
+    --attributes \
+    --tags \
     --clean
 
 echo "Importação concluída com sucesso"
