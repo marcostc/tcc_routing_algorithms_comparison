@@ -1,0 +1,27 @@
+gi# proj/.gitignore
+
+#Project Type
+.*.tipo
+
+# Python
+__pycache__/
+*.pyc
+
+# Aplication cache
+cache/
+
+# Ambiente virtual
+env_proj_00/
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+
+# Environment
+.env
+
+# Data
+db/*.osm
+db/*.sql
+
+# Docker
+db_data/
