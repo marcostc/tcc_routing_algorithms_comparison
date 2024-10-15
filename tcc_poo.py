@@ -492,7 +492,7 @@ class RoutePlannerGUI:
         self.cuisine_entry.insert(0, self.preferences.preferences.get('cuisine', 'pizza'))
 
         # Novo campo para o número de destinos
-        ttk.Label(main_frame, text="Número de Destinos Mais Próximos:").grid(row=3, column=0, sticky=tk.W)
+        ttk.Label(main_frame, text="Número Máximo de Destinos Mais Próximos:").grid(row=3, column=0, sticky=tk.W)
         self.num_destinations_entry = ttk.Entry(main_frame, width=20)
         self.num_destinations_entry.grid(row=3, column=1, sticky=(tk.W, tk.E))
         self.num_destinations_entry.insert(0, str(self.preferences.preferences.get('num_destinations', 10)))
