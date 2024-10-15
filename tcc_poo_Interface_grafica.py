@@ -412,11 +412,30 @@ class RoutePlotter:
         # Adicionar controle de camadas
         folium.LayerControl().add_to(m)
 
+        # Gerar nome de arquivo sem sobrescrever
+        file_name = self.generate_unique_filename('mapa_rotas.html')
+
         # Salvar e exibir o mapa
-        m.save('mapa_rotas.html')
-        print("Mapa salvo como 'mapa_rotas.html'. Abra-o no seu navegador para visualização.")
+        m.save(file_name)
+        print(f"Mapa salvo como '{file_name}'. Abra-o no seu navegador para visualização.")
         # Abrir o mapa no navegador
-        webbrowser.open('mapa_rotas.html')
+        webbrowser.open(file_name)
+
+    @staticmethod
+    def generate_unique_filename(base_filename):
+        """
+        Gera um nome de arquivo único, incrementando um sufixo numérico se necessário.
+        """
+        if not os.path.exists(base_filename):
+            return base_filename
+        else:
+            base, ext = os.path.splitext(base_filename)
+            i = 1
+            while True:
+                new_filename = f"{base}_{i:02d}{ext}"
+                if not os.path.exists(new_filename):
+                    return new_filename
+                i += 1
 
 class RoutePlannerGUI:
     def __init__(self):
