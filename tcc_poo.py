@@ -69,11 +69,12 @@ class UserPreferences:
         else:
             return {}
 
-    def get_user_input(self, address, radius, cuisine):
+    def get_user_input(self, address, radius, cuisine, num_destinations):
         self.preferences['address'] = address
         self.preferences['radius'] = radius
         self.preferences['cuisine'] = cuisine
-        return address, radius, cuisine
+        self.preferences['num_destinations'] = num_destinations
+        return address, radius, cuisine, num_destinations
 
 class GeoCoder:
     @staticmethod
@@ -372,7 +373,7 @@ class RoutePlotter:
             'bidirectional_a_star': 'darkgreen'
         }
 
-        # Adicionar rotas em camadas separadas, limitando o número de rotas
+        # Adicionar rotas em camadas separadas
         for alg in algorithms:
             layer = folium.FeatureGroup(name=f"Rotas {alg.replace('_', ' ').capitalize()}")
             for route in routes[alg][:limit]:
@@ -450,6 +451,7 @@ class RoutePlannerGUI:
         self.address = None
         self.radius = None
         self.cuisine = None
+        self.num_destinations = None
         self.origin_point = None
         self.origin_address = None
         self.graph_handler = None
@@ -489,21 +491,27 @@ class RoutePlannerGUI:
         self.cuisine_entry.grid(row=2, column=1, sticky=(tk.W, tk.E))
         self.cuisine_entry.insert(0, self.preferences.preferences.get('cuisine', 'pizza'))
 
+        # Novo campo para o número de destinos
+        ttk.Label(main_frame, text="Número de Destinos Mais Próximos:").grid(row=3, column=0, sticky=tk.W)
+        self.num_destinations_entry = ttk.Entry(main_frame, width=20)
+        self.num_destinations_entry.grid(row=3, column=1, sticky=(tk.W, tk.E))
+        self.num_destinations_entry.insert(0, str(self.preferences.preferences.get('num_destinations', 10)))
+
         # Botão de execução
         self.run_button = ttk.Button(main_frame, text="Calcular Rotas", command=self.run_thread)
-        self.run_button.grid(row=3, column=0, columnspan=2, pady=10)
+        self.run_button.grid(row=4, column=0, columnspan=2, pady=10)
 
         # Barra de progresso
         self.progress = ttk.Progressbar(main_frame, orient='horizontal', mode='indeterminate')
-        self.progress.grid(row=4, column=0, columnspan=2, sticky=(tk.W, tk.E))
+        self.progress.grid(row=5, column=0, columnspan=2, sticky=(tk.W, tk.E))
 
         # Mensagens
         self.message = tk.StringVar()
-        ttk.Label(main_frame, textvariable=self.message).grid(row=5, column=0, columnspan=2, sticky=tk.W)
+        ttk.Label(main_frame, textvariable=self.message).grid(row=6, column=0, columnspan=2, sticky=tk.W)
 
         # Janela de saída de texto
         self.output_text = tk.Text(main_frame, wrap='word', height=15)
-        self.output_text.grid(row=6, column=0, columnspan=2, sticky=(tk.W, tk.E))
+        self.output_text.grid(row=7, column=0, columnspan=2, sticky=(tk.W, tk.E))
 
         # Redirecionar stdout e stderr para a janela de texto
         sys.stdout = RedirectText(self.output_text)
@@ -523,9 +531,10 @@ class RoutePlannerGUI:
             self.address = self.address_entry.get()
             self.radius = int(self.radius_entry.get())
             self.cuisine = self.cuisine_entry.get()
+            self.num_destinations = int(self.num_destinations_entry.get())
 
             # Atualizar preferências
-            self.preferences.get_user_input(self.address, self.radius, self.cuisine)
+            self.preferences.get_user_input(self.address, self.radius, self.cuisine, self.num_destinations)
             self.preferences.save_preferences()
 
             # Geocodificar o endereço
@@ -604,7 +613,9 @@ class RoutePlannerGUI:
                 self.graph_handler.G_projected,
                 self.graph_handler.transformer
             )
-            routes_limit = min(len(self.selected_nodes), 10)  # Limitar para evitar sobrecarga
+
+            routes_limit = len(self.selected_nodes)  # Usar o número de destinos selecionados
+
             self.route_plotter.plot_routes_subset(
                 self.origin_point,
                 self.route_calculator.routes,
@@ -706,8 +717,12 @@ class RoutePlannerGUI:
             print("Nenhum destino alcançável encontrado.")
             return [], [], []
 
-        # Selecionar os N destinos mais próximos (limitar a 10)
-        selected_destinations = distances[:10]
+        # Selecionar o número de destinos especificado pelo usuário
+        num_destinations = self.num_destinations
+        if num_destinations > len(distances):
+            num_destinations = len(distances)
+
+        selected_destinations = distances[:num_destinations]
 
         # Extrair os nós e nomes selecionados
         selected_nodes = [node for dist, node, name in selected_destinations]
