@@ -34,6 +34,24 @@ def timed(func):
         return result
     return wrapper
 
+class RedirectText(object):
+    """
+    Classe para redirecionar stdout e stderr para um widget Text do Tkinter.
+    """
+    def __init__(self, text_widget):
+        self.text_widget = text_widget
+
+    def write(self, string):
+        # Agendar a atualização do widget no thread principal
+        self.text_widget.after(0, self._append_text, string)
+
+    def _append_text(self, string):
+        self.text_widget.insert(tk.END, string)
+        self.text_widget.see(tk.END)  # Rolar para o final
+
+    def flush(self):
+        pass
+
 class UserPreferences:
     def __init__(self, filename='user_preferences.json'):
         self.filename = filename
@@ -65,9 +83,6 @@ class GeoCoder:
         if not locations:
             print("Endereço não encontrado. Tente novamente.")
             return None
-        elif len(locations) == 1:
-            location = locations[0]
-            return (location.latitude, location.longitude, location.address)
         else:
             # Se múltiplos resultados, retornar o primeiro
             location = locations[0]
@@ -460,6 +475,14 @@ class RoutePlannerGUI:
         self.message = tk.StringVar()
         ttk.Label(main_frame, textvariable=self.message).grid(row=5, column=0, columnspan=2, sticky=tk.W)
 
+        # Janela de saída de texto
+        self.output_text = tk.Text(main_frame, wrap='word', height=15)
+        self.output_text.grid(row=6, column=0, columnspan=2, sticky=(tk.W, tk.E))
+
+        # Redirecionar stdout e stderr para a janela de texto
+        sys.stdout = RedirectText(self.output_text)
+        sys.stderr = RedirectText(self.output_text)
+
     def run_thread(self):
         # Executar o processamento em uma thread separada para não travar a GUI
         threading.Thread(target=self.run).start()
@@ -489,6 +512,7 @@ class RoutePlannerGUI:
         else:
             self.origin_point = (geocode_result[0], geocode_result[1])
             self.origin_address = geocode_result[2]
+            print(f"Endereço selecionado: {self.origin_address}")
 
         # Criar e processar o grafo
         self.graph_handler = GraphHandler(self.origin_point, self.radius)
@@ -528,6 +552,10 @@ class RoutePlannerGUI:
             self.selected_nodes
         )
         self.route_calculator.calculate_routes(algorithms=self.algorithms)
+
+        # Exibir tempos médios
+        for alg, avg_time in self.route_calculator.avg_times.items():
+            print(f"Tempo Médio {alg.replace('_', ' ').capitalize()}: {avg_time:.6f} segundos")
 
         # Plotar as rotas
         self.route_plotter = RoutePlotter(
