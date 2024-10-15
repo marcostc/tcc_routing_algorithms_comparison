@@ -10,6 +10,16 @@ __pycache__/
 # Aplication cache
 cache/
 
+# Aplication distribution
+dist/
+
+# Aplication build
+build/
+
+# Aplication executables
+output/
+
+
 # User preferences
 user_preferences.json
 
