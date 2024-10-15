@@ -79,14 +79,16 @@ class GeoCoder:
     @staticmethod
     def geocode_address(address):
         geolocator = Nominatim(user_agent="shortest_path_tester")
-        locations = geolocator.geocode(address, exactly_one=False, limit=5)
+        locations = geolocator.geocode(address, exactly_one=False, limit=50)
         if not locations:
             print("Endereço não encontrado. Tente novamente.")
             return None
-        else:
-            # Se múltiplos resultados, retornar o primeiro
+        elif len(locations) == 1:
             location = locations[0]
             return (location.latitude, location.longitude, location.address)
+        else:
+            # Retornar todos os resultados encontrados
+            return [(loc.latitude, loc.longitude, loc.address) for loc in locations]
 
 class GraphHandler:
     def __init__(self, origin_point, radius):
@@ -528,10 +530,24 @@ class RoutePlannerGUI:
             self.progress.stop()
             self.message.set("")
             return
+        elif isinstance(geocode_result, list) and len(geocode_result) > 1:
+            # Se múltiplos resultados, permitir que o usuário selecione
+            selected = self.select_address(geocode_result)
+            if selected is None:
+                messagebox.showinfo("Informação", "Nenhum endereço selecionado.")
+                self.run_button.config(state=tk.NORMAL)
+                self.progress.stop()
+                self.message.set("")
+                return
+            else:
+                self.origin_point = (selected[0], selected[1])
+                self.origin_address = selected[2]
         else:
+            # Apenas um resultado encontrado
             self.origin_point = (geocode_result[0], geocode_result[1])
             self.origin_address = geocode_result[2]
-            print(f"Endereço selecionado: {self.origin_address}")
+
+        print(f"Endereço selecionado: {self.origin_address}")
 
         # Criar e processar o grafo
         self.graph_handler = GraphHandler(self.origin_point, self.radius)
@@ -595,6 +611,67 @@ class RoutePlannerGUI:
         self.run_button.config(state=tk.NORMAL)
         self.progress.stop()
         self.message.set("Processamento concluído. O mapa foi aberto no navegador.")
+
+    def select_address(self, addresses):
+        """
+        Exibe uma janela para o usuário selecionar um endereço dentre as opções encontradas.
+        """
+        def on_select():
+            selected_item = tree.selection()
+            if selected_item:
+                idx = int(selected_item[0])
+                selected_address[0] = addresses[idx]
+                top.destroy()
+            else:
+                selected_address[0] = None
+                top.destroy()
+
+        selected_address = [None]
+        top = tk.Toplevel(self.root)
+        top.title("Selecione o Endereço")
+        top.geometry("600x300")  # Definir tamanho inicial da janela
+
+        ttk.Label(top, text="Múltiplos endereços encontrados. Selecione o desejado:").pack(pady=5)
+
+        # Frame para conter o Treeview e as barras de rolagem
+        tree_frame = ttk.Frame(top)
+        tree_frame.pack(fill=tk.BOTH, expand=True)
+
+        # Barras de rolagem
+        v_scrollbar = ttk.Scrollbar(tree_frame, orient=tk.VERTICAL)
+        h_scrollbar = ttk.Scrollbar(tree_frame, orient=tk.HORIZONTAL)
+
+        # Criar o Treeview com suporte a rolagem
+        columns = ('endereco',)
+        tree = ttk.Treeview(tree_frame, columns=columns, show='headings',
+                            yscrollcommand=v_scrollbar.set, xscrollcommand=h_scrollbar.set)
+
+        # Configurar colunas
+        tree.heading('endereco', text='Endereço')
+        tree.column('endereco', width=500, stretch=True)
+
+        # Inserir os endereços no Treeview
+        for idx, addr in enumerate(addresses):
+            tree.insert('', 'end', iid=str(idx), values=(f"{idx + 1}. {addr[2]}",))
+
+        # Configurar layout
+        tree.grid(row=0, column=0, sticky='nsew')
+        v_scrollbar.grid(row=0, column=1, sticky='ns')
+        h_scrollbar.grid(row=1, column=0, sticky='ew')
+
+        # Configurar barras de rolagem
+        v_scrollbar.config(command=tree.yview)
+        h_scrollbar.config(command=tree.xview)
+
+        # Expandir o Treeview quando a janela for redimensionada
+        tree_frame.rowconfigure(0, weight=1)
+        tree_frame.columnconfigure(0, weight=1)
+
+        select_button = ttk.Button(top, text="Selecionar", command=on_select)
+        select_button.pack(pady=5)
+
+        self.root.wait_window(top)
+        return selected_address[0]
 
     def select_closest_destinations(self):
         G_projected = self.graph_handler.G_projected
