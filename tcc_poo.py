@@ -56,6 +56,18 @@ class UserPreferences:
     def __init__(self, filename='user_preferences.json'):
         self.filename = filename
         self.preferences = self.load_preferences()
+        # Definir cores e estilos padrão se não existirem
+        if 'visualization' not in self.preferences:
+            self.preferences['visualization'] = self.default_visualization_preferences()
+
+    def default_visualization_preferences(self):
+        return {
+            'dijkstra': {'color': 'green', 'style': 'solid'},
+            'astar': {'color': 'purple', 'style': 'solid'},
+            'bellman_ford': {'color': 'orange', 'style': 'solid'},
+            'bidirectional_dijkstra': {'color': 'blue', 'style': 'solid'},
+            'bidirectional_a_star': {'color': 'darkgreen', 'style': 'solid'}
+        }
 
     def save_preferences(self):
         with open(self.filename, 'w', encoding='utf-8') as f:
@@ -341,9 +353,22 @@ class RouteCalculator:
         return full_path
 
 class RoutePlotter:
-    def __init__(self, G_projected, transformer):
+    def __init__(self, G_projected, transformer, visualization_prefs):
         self.G_projected = G_projected
         self.transformer = transformer
+        self.visualization_prefs = visualization_prefs
+
+    def get_dash_array(self, style):
+        if style == 'solid':
+            return None
+        elif style == 'dashed':
+            return '5, 5'
+        elif style == 'dotted':
+            return '1, 5'
+        elif style == 'dashdot':
+            return '5, 5, 1, 5'
+        else:
+            return None  # Default to solid
 
     def plot_routes_subset(self, origin_point_geo, routes, destination_coords_geo, destination_names, destination_dists, algorithms, limit):
         # Plota as rotas no mapa
@@ -364,17 +389,13 @@ class RoutePlotter:
                 icon=folium.Icon(color='red', icon='cutlery')
             ).add_to(m)
 
-        # Definir cores para os algoritmos
-        color_map = {
-            'dijkstra': 'green',
-            'astar': 'purple',
-            'bellman_ford': 'orange',
-            'bidirectional_dijkstra': 'blue',
-            'bidirectional_a_star': 'darkgreen'
-        }
-
         # Adicionar rotas em camadas separadas
         for alg in algorithms:
+            alg_prefs = self.visualization_prefs.get(alg, {'color': 'blue', 'style': 'solid'})
+            color = alg_prefs['color']
+            style = alg_prefs['style']
+            dash_array = self.get_dash_array(style)
+
             layer = folium.FeatureGroup(name=f"Rotas {alg.replace('_', ' ').capitalize()}")
             for route in routes[alg][:limit]:
                 try:
@@ -393,9 +414,10 @@ class RoutePlotter:
                     # Adicionar a rota como PolyLine
                     polyline = folium.PolyLine(
                         route_geo_latlon,
-                        color=color_map.get(alg, 'blue'),
+                        color=color,
                         weight=5,
                         opacity=1,
+                        dash_array=dash_array,
                         popup=f"Rota {alg.replace('_', ' ').capitalize()}"
                     )
                     polyline.add_to(layer)
@@ -408,7 +430,7 @@ class RoutePlotter:
                         repeat=True,      # Repetir o símbolo para aumentar o tamanho
                         offset=9,         # Ajusta a posição vertical do símbolo
                         attributes={
-                            'fill': color_map.get(alg, 'blue'),
+                            'fill': color,
                             'font-weight': 'normal',
                             'font-size': '8'  # Aumenta o tamanho da seta
                         }
@@ -492,7 +514,7 @@ class RoutePlannerGUI:
         self.cuisine_entry.insert(0, self.preferences.preferences.get('cuisine', 'pizza'))
 
         # Novo campo para o número de destinos
-        ttk.Label(main_frame, text="Número Máximo de Destinos Mais Próximos:").grid(row=3, column=0, sticky=tk.W)
+        ttk.Label(main_frame, text="Número de Destinos Mais Próximos:").grid(row=3, column=0, sticky=tk.W)
         self.num_destinations_entry = ttk.Entry(main_frame, width=20)
         self.num_destinations_entry.grid(row=3, column=1, sticky=(tk.W, tk.E))
         self.num_destinations_entry.insert(0, str(self.preferences.preferences.get('num_destinations', 10)))
@@ -501,21 +523,28 @@ class RoutePlannerGUI:
         self.run_button = ttk.Button(main_frame, text="Calcular Rotas", command=self.run_thread)
         self.run_button.grid(row=4, column=0, columnspan=2, pady=10)
 
+        # Botão para personalizar visualização
+        self.customize_button = ttk.Button(main_frame, text="Personalizar Visualização", command=self.open_customization_window)
+        self.customize_button.grid(row=5, column=0, columnspan=2, pady=5)
+
         # Barra de progresso
         self.progress = ttk.Progressbar(main_frame, orient='horizontal', mode='indeterminate')
-        self.progress.grid(row=5, column=0, columnspan=2, sticky=(tk.W, tk.E))
+        self.progress.grid(row=6, column=0, columnspan=2, sticky=(tk.W, tk.E))
 
         # Mensagens
         self.message = tk.StringVar()
-        ttk.Label(main_frame, textvariable=self.message).grid(row=6, column=0, columnspan=2, sticky=tk.W)
+        ttk.Label(main_frame, textvariable=self.message).grid(row=7, column=0, columnspan=2, sticky=tk.W)
 
         # Janela de saída de texto
         self.output_text = tk.Text(main_frame, wrap='word', height=15)
-        self.output_text.grid(row=7, column=0, columnspan=2, sticky=(tk.W, tk.E))
+        self.output_text.grid(row=8, column=0, columnspan=2, sticky=(tk.W, tk.E))
 
         # Redirecionar stdout e stderr para a janela de texto
         sys.stdout = RedirectText(self.output_text)
         sys.stderr = RedirectText(self.output_text)
+
+    def open_customization_window(self):
+        CustomizationWindow(self.root, self.preferences)
 
     def run_thread(self):
         # Executar o processamento em uma thread separada para não travar a GUI
@@ -611,7 +640,8 @@ class RoutePlannerGUI:
             # Plotar as rotas
             self.route_plotter = RoutePlotter(
                 self.graph_handler.G_projected,
-                self.graph_handler.transformer
+                self.graph_handler.transformer,
+                self.preferences.preferences['visualization']  # Passar as preferências de visualização
             )
 
             routes_limit = len(self.selected_nodes)  # Usar o número de destinos selecionados
@@ -738,6 +768,54 @@ class RoutePlannerGUI:
         self.selected_coords_geo = selected_coords_geo  # Para uso posterior
 
         return selected_nodes, selected_names, selected_dists
+
+class CustomizationWindow:
+    def __init__(self, master, preferences):
+        self.master = master
+        self.preferences = preferences
+        self.top = tk.Toplevel(self.master)
+        self.top.title("Personalizar Visualização")
+        self.create_widgets()
+
+    def create_widgets(self):
+        # Frame principal
+        main_frame = ttk.Frame(self.top, padding="10")
+        main_frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
+
+        algorithms = ['dijkstra', 'astar', 'bellman_ford', 'bidirectional_dijkstra', 'bidirectional_a_star']
+        self.color_vars = {}
+        self.style_vars = {}
+
+        # Opções de cores e estilos
+        for idx, alg in enumerate(algorithms):
+            alg_name = alg.replace('_', ' ').capitalize()
+            ttk.Label(main_frame, text=f"{alg_name}").grid(row=idx, column=0, sticky=tk.W)
+
+            # Campo para selecionar a cor
+            color_var = tk.StringVar(value=self.preferences.preferences['visualization'][alg]['color'])
+            self.color_vars[alg] = color_var
+            color_entry = ttk.Entry(main_frame, textvariable=color_var, width=10)
+            color_entry.grid(row=idx, column=1, sticky=tk.W)
+            ttk.Label(main_frame, text="Cor (nome ou código HEX)").grid(row=idx, column=2, sticky=tk.W)
+
+            # Campo para selecionar o estilo
+            style_var = tk.StringVar(value=self.preferences.preferences['visualization'][alg]['style'])
+            self.style_vars[alg] = style_var
+            style_combo = ttk.Combobox(main_frame, textvariable=style_var, values=['solid', 'dashed', 'dotted', 'dashdot'], width=10)
+            style_combo.grid(row=idx, column=3, sticky=tk.W)
+            ttk.Label(main_frame, text="Estilo da Linha").grid(row=idx, column=4, sticky=tk.W)
+
+        # Botão para salvar as preferências
+        save_button = ttk.Button(main_frame, text="Salvar", command=self.save_preferences)
+        save_button.grid(row=len(algorithms), column=0, columnspan=5, pady=10)
+
+    def save_preferences(self):
+        for alg in self.color_vars:
+            self.preferences.preferences['visualization'][alg]['color'] = self.color_vars[alg].get()
+            self.preferences.preferences['visualization'][alg]['style'] = self.style_vars[alg].get()
+        self.preferences.save_preferences()
+        messagebox.showinfo("Informação", "Preferências salvas com sucesso.")
+        self.top.destroy()
 
 if __name__ == "__main__":
     RoutePlannerGUI()
