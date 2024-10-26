@@ -164,60 +164,90 @@ class GraphHandler:
         print(f"O grafo utilizado para o cálculo das rotas possui {num_nodes} nós e {num_edges} arestas.")
 
 class POIFinder:
-    def __init__(self, G_projected, origin_point_geo, radius, cuisine):
+    def __init__(self, G_projected, origin_point_geo, radius):
         self.G_projected = G_projected
         self.origin_point_geo = origin_point_geo
         self.radius = radius
-        self.cuisine = cuisine
+        self.cuisine = None  # Será definido após a seleção pelo usuário
         self.destination_nodes = []
         self.destination_coords_geo = []
         self.destination_names = []
+        self.available_cuisines = set()  # Novo atributo para armazenar as cozinhas disponíveis
 
-    def get_pois(self):
+    def get_available_cuisines(self):
+        # Buscar todos os restaurantes na área
         tags = {'amenity': 'restaurant'}
         pois = ox.geometries_from_point(self.origin_point_geo, tags=tags, dist=self.radius)
 
         if pois.empty:
             print("Nenhum estabelecimento encontrado na área.")
             return
+
+        # Obter todas as tags 'cuisine' disponíveis
+        if 'cuisine' in pois.columns:
+            cuisines = pois['cuisine'].dropna().unique()
+            # Algumas entradas podem ter múltiplas cozinhas separadas por ';'
+            cuisines_split = [c.strip() for sublist in cuisines for c in sublist.split(';')]
+            self.available_cuisines = set(cuisines_split)
         else:
-            print(f"{len(pois)} estabelecimentos encontrados.")
+            self.available_cuisines = set()
 
-            # Filtrar por substring na coluna 'cuisine'
-            if 'cuisine' in pois.columns:
-                pois = pois[pois['cuisine'].str.contains(self.cuisine, case=False, na=False)]
-                print(f"{len(pois)} estabelecimentos correspondem à busca por '{self.cuisine}'.")
+        # Se não houver 'cuisine', tentar usar 'name' como alternativa
+        if not self.available_cuisines:
+            print("A coluna 'cuisine' não está presente nos dados ou está vazia.")
+            if 'name' in pois.columns:
+                names = pois['name'].dropna().unique()
+                self.available_cuisines = set(names)
             else:
-                print("A coluna 'cuisine' não está presente nos dados.")
-                pois = pois[pois['name'].str.contains(self.cuisine, case=False, na=False)]
-                print(f"{len(pois)} estabelecimentos correspondem à busca por nome contendo '{self.cuisine}'.")
+                print("A coluna 'name' também não está presente.")
+                self.available_cuisines = set()
 
-            if pois.empty:
-                print("Nenhum estabelecimento correspondente encontrado após filtragem.")
-                return
+    def get_pois(self):
+        if not self.cuisine:
+            print("Nenhuma 'cuisine' foi selecionada.")
+            return
 
-            # Reprojetar para o CRS do grafo projetado
-            pois_projected = pois.to_crs(self.G_projected.graph['crs'])
+        tags = {'amenity': 'restaurant'}
+        pois = ox.geometries_from_point(self.origin_point_geo, tags=tags, dist=self.radius)
 
-            # Calcular os centróides
-            pois_centroids_projected = pois_projected.geometry.centroid
+        if pois.empty:
+            print("Nenhum estabelecimento encontrado na área.")
+            return
 
-            # Obter coordenadas projetadas
-            pois_coords_proj = [(point.x, point.y) for point in pois_centroids_projected]
+        # Filtrar por 'cuisine' selecionada
+        if 'cuisine' in pois.columns:
+            pois = pois[pois['cuisine'].str.contains(self.cuisine, case=False, na=False)]
+            print(f"{len(pois)} estabelecimentos correspondem à busca por '{self.cuisine}'.")
+        else:
+            pois = pois[pois['name'].str.contains(self.cuisine, case=False, na=False)]
+            print(f"{len(pois)} estabelecimentos correspondem à busca por nome contendo '{self.cuisine}'.")
 
-            # Encontrar os nós mais próximos
-            self.destination_nodes = ox.distance.nearest_nodes(
-                self.G_projected,
-                X=[coord[0] for coord in pois_coords_proj],
-                Y=[coord[1] for coord in pois_coords_proj]
-            )
+        if pois.empty:
+            print("Nenhum estabelecimento correspondente encontrado após filtragem.")
+            return
 
-            # Obter nomes dos estabelecimentos
-            self.destination_names = pois['name'].tolist()
+        # Reprojetar para o CRS do grafo projetado
+        pois_projected = pois.to_crs(self.G_projected.graph['crs'])
 
-            # Converter para coordenadas geográficas para plotagem
-            pois_centroids_geo = pois_centroids_projected.to_crs(epsg=4326)
-            self.destination_coords_geo = [(point.y, point.x) for point in pois_centroids_geo]
+        # Calcular os centróides
+        pois_centroids_projected = pois_projected.geometry.centroid
+
+        # Obter coordenadas projetadas
+        pois_coords_proj = [(point.x, point.y) for point in pois_centroids_projected]
+
+        # Encontrar os nós mais próximos
+        self.destination_nodes = ox.distance.nearest_nodes(
+            self.G_projected,
+            X=[coord[0] for coord in pois_coords_proj],
+            Y=[coord[1] for coord in pois_coords_proj]
+        )
+
+        # Obter nomes dos estabelecimentos
+        self.destination_names = pois['name'].tolist()
+
+        # Converter para coordenadas geográficas para plotagem
+        pois_centroids_geo = pois_centroids_projected.to_crs(epsg=4326)
+        self.destination_coords_geo = [(point.y, point.x) for point in pois_centroids_geo]
 
 class RouteCalculator:
     def __init__(self, G_projected, origin_node, destination_nodes):
@@ -508,36 +538,32 @@ class RoutePlannerGUI:
         self.radius_entry.grid(row=1, column=1, sticky=(tk.W, tk.E))
         self.radius_entry.insert(0, str(self.preferences.preferences.get('radius', 1000)))
 
-        ttk.Label(main_frame, text="Tipo de Estabelecimento:").grid(row=2, column=0, sticky=tk.W)
-        self.cuisine_entry = ttk.Entry(main_frame, width=20)
-        self.cuisine_entry.grid(row=2, column=1, sticky=(tk.W, tk.E))
-        self.cuisine_entry.insert(0, self.preferences.preferences.get('cuisine', 'pizza'))
-
-        # Novo campo para o número de destinos
-        ttk.Label(main_frame, text="Número de Destinos Mais Próximos:").grid(row=3, column=0, sticky=tk.W)
+        # Remover o campo 'Tipo de Estabelecimento'
+        # Ajustar as posições dos demais widgets
+        ttk.Label(main_frame, text="Número de Destinos Mais Próximos:").grid(row=2, column=0, sticky=tk.W)
         self.num_destinations_entry = ttk.Entry(main_frame, width=20)
-        self.num_destinations_entry.grid(row=3, column=1, sticky=(tk.W, tk.E))
+        self.num_destinations_entry.grid(row=2, column=1, sticky=(tk.W, tk.E))
         self.num_destinations_entry.insert(0, str(self.preferences.preferences.get('num_destinations', 10)))
 
         # Botão de execução
         self.run_button = ttk.Button(main_frame, text="Calcular Rotas", command=self.run_thread)
-        self.run_button.grid(row=4, column=0, columnspan=2, pady=10)
+        self.run_button.grid(row=3, column=0, columnspan=2, pady=10)
 
         # Botão para personalizar visualização
         self.customize_button = ttk.Button(main_frame, text="Personalizar Visualização", command=self.open_customization_window)
-        self.customize_button.grid(row=5, column=0, columnspan=2, pady=5)
+        self.customize_button.grid(row=4, column=0, columnspan=2, pady=5)
 
         # Barra de progresso
         self.progress = ttk.Progressbar(main_frame, orient='horizontal', mode='indeterminate')
-        self.progress.grid(row=6, column=0, columnspan=2, sticky=(tk.W, tk.E))
+        self.progress.grid(row=5, column=0, columnspan=2, sticky=(tk.W, tk.E))
 
         # Mensagens
         self.message = tk.StringVar()
-        ttk.Label(main_frame, textvariable=self.message).grid(row=7, column=0, columnspan=2, sticky=tk.W)
+        ttk.Label(main_frame, textvariable=self.message).grid(row=6, column=0, columnspan=2, sticky=tk.W)
 
         # Janela de saída de texto
         self.output_text = tk.Text(main_frame, wrap='word', height=15)
-        self.output_text.grid(row=8, column=0, columnspan=2, sticky=(tk.W, tk.E))
+        self.output_text.grid(row=7, column=0, columnspan=2, sticky=(tk.W, tk.E))
 
         # Redirecionar stdout e stderr para a janela de texto
         sys.stdout = RedirectText(self.output_text)
@@ -559,11 +585,10 @@ class RoutePlannerGUI:
             # Obter entradas do usuário
             self.address = self.address_entry.get()
             self.radius = int(self.radius_entry.get())
-            self.cuisine = self.cuisine_entry.get()
             self.num_destinations = int(self.num_destinations_entry.get())
 
-            # Atualizar preferências
-            self.preferences.get_user_input(self.address, self.radius, self.cuisine, self.num_destinations)
+            # Atualizar preferências (não salvamos 'cuisine' neste ponto)
+            self.preferences.get_user_input(self.address, self.radius, '', self.num_destinations)
             self.preferences.save_preferences()
 
             # Geocodificar o endereço
@@ -597,15 +622,53 @@ class RoutePlannerGUI:
             self.graph_handler = GraphHandler(self.origin_point, self.radius)
             self.graph_handler.create_graph()
             self.graph_handler.find_origin_node()
-            self.graph_handler.print_graph_info()  # Chamar o método para imprimir informações do grafo
+            self.graph_handler.print_graph_info()
 
-            # Buscar estabelecimentos
+            # Buscar estabelecimentos e obter cozinhas disponíveis
             self.poi_finder = POIFinder(
                 self.graph_handler.G_projected,
                 self.origin_point,
-                self.radius,
-                self.cuisine
+                self.radius
             )
+
+            # Executar get_available_cuisines em uma thread separada
+            def fetch_cuisines():
+                self.poi_finder.get_available_cuisines()
+                cuisines = self.poi_finder.available_cuisines
+                if not cuisines:
+                    messagebox.showwarning("Aviso", "Nenhum tipo de estabelecimento encontrado na área.")
+                    self.run_button.config(state=tk.NORMAL)
+                    self.progress.stop()
+                    self.message.set("")
+                    return
+                else:
+                    selected_cuisine = self.select_cuisine(cuisines)
+                    if selected_cuisine is None:
+                        messagebox.showinfo("Informação", "Nenhuma opção selecionada.")
+                        self.run_button.config(state=tk.NORMAL)
+                        self.progress.stop()
+                        self.message.set("")
+                        return
+                    else:
+                        self.cuisine = selected_cuisine
+                        self.preferences.preferences['cuisine'] = self.cuisine
+                        self.preferences.save_preferences()
+                        self.poi_finder.cuisine = self.cuisine
+
+                        # Prosseguir com o restante do processamento na thread principal
+                        self.after_fetch_cuisines()
+
+            threading.Thread(target=fetch_cuisines).start()
+
+        except Exception as e:
+            print(f"Ocorreu um erro: {e}")
+            messagebox.showerror("Erro", f"Ocorreu um erro: {e}")
+            self.run_button.config(state=tk.NORMAL)
+            self.progress.stop()
+
+    def after_fetch_cuisines(self):
+        try:
+            # Buscar POIs com a 'cuisine' selecionada
             self.poi_finder.get_pois()
 
             if not self.poi_finder.destination_nodes:
@@ -641,7 +704,7 @@ class RoutePlannerGUI:
             self.route_plotter = RoutePlotter(
                 self.graph_handler.G_projected,
                 self.graph_handler.transformer,
-                self.preferences.preferences['visualization']  # Passar as preferências de visualização
+                self.preferences.preferences['visualization']
             )
 
             routes_limit = len(self.selected_nodes)  # Usar o número de destinos selecionados
@@ -657,6 +720,7 @@ class RoutePlannerGUI:
             )
 
             self.message.set("Processamento concluído. O mapa foi aberto no navegador.")
+
         except Exception as e:
             print(f"Ocorreu um erro: {e}")
             messagebox.showerror("Erro", f"Ocorreu um erro: {e}")
@@ -724,6 +788,41 @@ class RoutePlannerGUI:
 
         self.root.wait_window(top)
         return selected_address[0]
+
+    def select_cuisine(self, cuisines):
+        """
+        Exibe uma janela para o usuário selecionar uma 'cuisine' dentre as opções encontradas.
+        """
+        def on_select():
+            selected_item = listbox.curselection()
+            if selected_item:
+                idx = selected_item[0]
+                selected_cuisine[0] = cuisines_list[idx]
+                top.destroy()
+            else:
+                messagebox.showwarning("Aviso", "Nenhuma opção selecionada.")
+
+        selected_cuisine = [None]
+        top = tk.Toplevel(self.root)
+        top.title("Selecione o Tipo de Estabelecimento")
+        top.geometry("400x300")
+
+        ttk.Label(top, text="Selecione o tipo de estabelecimento desejado:").pack(pady=5)
+
+        # Listbox para exibir as opções
+        listbox = tk.Listbox(top)
+        listbox.pack(fill=tk.BOTH, expand=True)
+
+        # Inserir as opções no listbox
+        cuisines_list = sorted(cuisines)
+        for cuisine in cuisines_list:
+            listbox.insert(tk.END, cuisine)
+
+        select_button = ttk.Button(top, text="Selecionar", command=on_select)
+        select_button.pack(pady=5)
+
+        self.root.wait_window(top)
+        return selected_cuisine[0]
 
     def select_closest_destinations(self):
         G_projected = self.graph_handler.G_projected
