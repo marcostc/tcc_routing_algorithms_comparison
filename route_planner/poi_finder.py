@@ -4,24 +4,40 @@ import osmnx as ox
 import geopandas as gpd
 from shapely.geometry import Point
 
+# Importar o logger
+from .logger import logger
+
 class POIFinder:
+    """
+    Classe para encontrar pontos de interesse (POIs), como estabelecimentos comerciais,
+    dentro de um raio especificado a partir de um ponto de origem.
+    """
     def __init__(self, G_projected, origin_point_geo, radius):
         self.G_projected = G_projected
-        self.origin_point_geo = origin_point_geo
+        self.origin_point_geo = origin_point_geo  # (latitude, longitude)
         self.radius = radius
         self.cuisine = None  # Será definido após a seleção pelo usuário
         self.destination_nodes = []
         self.destination_coords_geo = []
         self.destination_names = []
-        self.available_cuisines = set()  # Novo atributo para armazenar as cozinhas disponíveis
+        self.available_cuisines = set()  # Armazena os tipos de estabelecimentos disponíveis
 
     def get_available_cuisines(self):
+        """
+        Obtém todos os tipos de estabelecimentos ('cuisine') disponíveis na área especificada.
+        """
         # Buscar todos os restaurantes na área
         tags = {'amenity': 'restaurant'}
-        pois = ox.geometries_from_point(self.origin_point_geo, tags=tags, dist=self.radius)
+        try:
+            pois = ox.features_from_point(self.origin_point_geo, tags=tags, dist=self.radius)
+        except Exception as e:
+            print(f"Erro ao obter POIs: {e}")
+            logger.error(f"Erro ao obter POIs: {e}")
+            return
 
         if pois.empty:
             print("Nenhum estabelecimento encontrado na área.")
+            logger.info("Nenhum estabelecimento encontrado na área.")
             return
 
         # Obter todas as tags 'cuisine' disponíveis
@@ -44,12 +60,19 @@ class POIFinder:
                 self.available_cuisines = set()
 
     def get_pois(self):
+        """
+        Filtra os POIs de acordo com o tipo de estabelecimento selecionado pelo usuário.
+        """
         if not self.cuisine:
             print("Nenhuma 'cuisine' foi selecionada.")
             return
 
         tags = {'amenity': 'restaurant'}
-        pois = ox.geometries_from_point(self.origin_point_geo, tags=tags, dist=self.radius)
+        try:
+            pois = ox.features_from_point(self.origin_point_geo, tags=tags, dist=self.radius)
+        except Exception as e:
+            print(f"Erro ao obter POIs: {e}")
+            return
 
         if pois.empty:
             print("Nenhum estabelecimento encontrado na área.")

@@ -6,12 +6,24 @@ import folium
 from folium.plugins import PolyLineTextPath
 
 class RoutePlotter:
+    """
+    Classe para plotar rotas em um mapa interativo utilizando o Folium.
+    """
     def __init__(self, G_projected, transformer, visualization_prefs):
         self.G_projected = G_projected
         self.transformer = transformer
         self.visualization_prefs = visualization_prefs
 
     def get_dash_array(self, style):
+        """
+        Retorna o padrão de traço ('dash_array') correspondente ao estilo fornecido.
+
+        Args:
+            style (str): Estilo da linha ('solid', 'dashed', 'dotted', 'dashdot').
+
+        Returns:
+            str or None: Padrão de traço para uso no Folium.
+        """
         if style == 'solid':
             return None
         elif style == 'dashed':
@@ -24,6 +36,18 @@ class RoutePlotter:
             return None  # Default to solid
 
     def plot_routes_subset(self, origin_point_geo, routes, destination_coords_geo, destination_names, destination_dists, algorithms, limit):
+        """
+        Plota um subconjunto de rotas no mapa.
+
+        Args:
+            origin_point_geo (tuple): Coordenadas geográficas do ponto de origem.
+            routes (dict): Dicionário com as rotas calculadas para cada algoritmo.
+            destination_coords_geo (list): Lista de coordenadas geográficas dos destinos.
+            destination_names (list): Lista de nomes dos destinos.
+            destination_dists (list): Lista de distâncias dos destinos.
+            algorithms (list): Lista de algoritmos a serem plotados.
+            limit (int): Número máximo de rotas a serem plotadas.
+        """
         # Plota as rotas no mapa
         m = folium.Map(location=origin_point_geo, zoom_start=13)
 
@@ -108,6 +132,12 @@ class RoutePlotter:
     def generate_unique_filename(base_filename):
         """
         Gera um nome de arquivo único, incrementando um sufixo numérico se necessário.
+
+        Args:
+            base_filename (str): Nome base do arquivo.
+
+        Returns:
+            str: Nome único do arquivo.
         """
         if not os.path.exists(base_filename):
             return base_filename

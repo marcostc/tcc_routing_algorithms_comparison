@@ -5,8 +5,13 @@ import heapq
 import networkx as nx
 
 from .utils import timed
+from .logger import logger
 
 class RouteCalculator:
+    """
+    Classe para calcular rotas entre o nó de origem e os nós de destino utilizando
+    diferentes algoritmos de caminho mínimo.
+    """
     def __init__(self, G_projected, origin_node, destination_nodes):
         self.G_projected = G_projected
         self.origin_node = origin_node
@@ -16,6 +21,12 @@ class RouteCalculator:
 
     @timed
     def calculate_routes(self, algorithms):
+        """
+        Calcula rotas para todos os destinos utilizando os algoritmos especificados.
+
+        Args:
+            algorithms (list): Lista de strings com os nomes dos algoritmos a serem utilizados.
+        """
         self.routes = {alg: [] for alg in algorithms}
         times = {alg: [] for alg in algorithms}
 
@@ -49,15 +60,29 @@ class RouteCalculator:
                     self.routes[alg].append(route)
                     times[alg].append(end_time - start_time)
                 except nx.NetworkXNoPath:
-                    print(f"Nenhuma rota encontrada para o nó {target} usando {alg}.")
+                    logger.warning(f"Nenhuma rota encontrada para o nó {target} usando {alg}.")
                 except Exception as e:
-                    print(f"Erro ao calcular rota para o nó {target} usando {alg}: {e}")
+                    logger.exception(f"Erro ao calcular rota para o nó {target} usando {alg}")
 
         self.avg_times = {alg: (sum(times[alg]) / len(times[alg]) if times[alg] else 0) for alg in algorithms}
 
     @staticmethod
     def bidirectional_a_star(G, source, target, heuristic):
-        # Implementação do algoritmo Bidirectional A*
+        """
+        Implementação personalizada do algoritmo Bidirectional A*.
+
+        Args:
+            G (networkx.DiGraph): Grafo direcionado.
+            source (int): Nó de origem.
+            target (int): Nó de destino.
+            heuristic (function): Função heurística que estima a distância entre dois nós.
+
+        Returns:
+            list: Lista de nós que representa o caminho encontrado.
+
+        Raises:
+            nx.NetworkXNoPath: Se não houver caminho entre source e target.
+        """
         forward_queue = []
         backward_queue = []
         heapq.heappush(forward_queue, (heuristic(source, target), 0, source))

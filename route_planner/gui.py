@@ -14,6 +14,7 @@ from .poi_finder import POIFinder
 from .route_calculator import RouteCalculator
 from .route_plotter import RoutePlotter
 from .customization_window import CustomizationWindow
+from .logger import logger  # Importar o logger
 
 class RoutePlannerGUI:
     def __init__(self):
@@ -38,54 +39,77 @@ class RoutePlannerGUI:
         self.root = tk.Tk()
         self.root.title("Planejador de Rotas")
         self.create_widgets()
+        self.apply_styles()
+        self.create_menu()
         self.root.mainloop()
 
     def create_widgets(self):
         # Frame principal
         main_frame = ttk.Frame(self.root, padding="10")
-        main_frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
+        main_frame.grid(row=0, column=0, sticky=(tk.N, tk.S, tk.E, tk.W))
 
-        # Campos de entrada
-        ttk.Label(main_frame, text="Endereço de Origem:").grid(row=0, column=0, sticky=tk.W)
-        self.address_entry = ttk.Entry(main_frame, width=50)
-        self.address_entry.grid(row=0, column=1, sticky=(tk.W, tk.E))
+        # Configurar expansão
+        self.root.columnconfigure(0, weight=1)
+        self.root.rowconfigure(0, weight=1)
+        main_frame.columnconfigure(1, weight=1)
+
+        # Campos de entrada com labels
+        ttk.Label(main_frame, text="Endereço de Origem:").grid(row=0, column=0, sticky=tk.W, pady=5)
+        self.address_entry = ttk.Entry(main_frame)
+        self.address_entry.grid(row=0, column=1, sticky=(tk.W, tk.E), pady=5)
         self.address_entry.insert(0, self.preferences.preferences.get('address', ''))
 
-        ttk.Label(main_frame, text="Raio de Busca (metros):").grid(row=1, column=0, sticky=tk.W)
-        self.radius_entry = ttk.Entry(main_frame, width=20)
-        self.radius_entry.grid(row=1, column=1, sticky=(tk.W, tk.E))
+        ttk.Label(main_frame, text="Raio de Busca (metros):").grid(row=1, column=0, sticky=tk.W, pady=5)
+        self.radius_entry = ttk.Entry(main_frame)
+        self.radius_entry.grid(row=1, column=1, sticky=(tk.W, tk.E), pady=5)
         self.radius_entry.insert(0, str(self.preferences.preferences.get('radius', 1000)))
 
-        # Remover o campo 'Tipo de Estabelecimento'
-        # Ajustar as posições dos demais widgets
-        ttk.Label(main_frame, text="Número de Destinos Mais Próximos:").grid(row=2, column=0, sticky=tk.W)
-        self.num_destinations_entry = ttk.Entry(main_frame, width=20)
-        self.num_destinations_entry.grid(row=2, column=1, sticky=(tk.W, tk.E))
+        ttk.Label(main_frame, text="Número de Destinos:").grid(row=2, column=0, sticky=tk.W, pady=5)
+        self.num_destinations_entry = ttk.Entry(main_frame)
+        self.num_destinations_entry.grid(row=2, column=1, sticky=(tk.W, tk.E), pady=5)
         self.num_destinations_entry.insert(0, str(self.preferences.preferences.get('num_destinations', 10)))
 
-        # Botão de execução
-        self.run_button = ttk.Button(main_frame, text="Calcular Rotas", command=self.run_thread)
-        self.run_button.grid(row=3, column=0, columnspan=2, pady=10)
-
-        # Botão para personalizar visualização
-        self.customize_button = ttk.Button(main_frame, text="Personalizar Visualização", command=self.open_customization_window)
-        self.customize_button.grid(row=4, column=0, columnspan=2, pady=5)
+        # Botões
+        button_frame = ttk.Frame(main_frame)
+        button_frame.grid(row=3, column=0, columnspan=2, pady=10)
+        self.run_button = ttk.Button(button_frame, text="Calcular Rotas", command=self.run_thread)
+        self.run_button.pack(side=tk.LEFT, padx=5)
+        self.customize_button = ttk.Button(button_frame, text="Personalizar Visualização", command=self.open_customization_window)
+        self.customize_button.pack(side=tk.LEFT, padx=5)
 
         # Barra de progresso
         self.progress = ttk.Progressbar(main_frame, orient='horizontal', mode='indeterminate')
-        self.progress.grid(row=5, column=0, columnspan=2, sticky=(tk.W, tk.E))
+        self.progress.grid(row=4, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=5)
 
         # Mensagens
         self.message = tk.StringVar()
-        ttk.Label(main_frame, textvariable=self.message).grid(row=6, column=0, columnspan=2, sticky=tk.W)
+        ttk.Label(main_frame, textvariable=self.message).grid(row=5, column=0, columnspan=2, sticky=tk.W)
 
         # Janela de saída de texto
-        self.output_text = tk.Text(main_frame, wrap='word', height=15)
-        self.output_text.grid(row=7, column=0, columnspan=2, sticky=(tk.W, tk.E))
+        self.output_text = tk.Text(main_frame, wrap='word', height=10)
+        self.output_text.grid(row=6, column=0, columnspan=2, sticky=(tk.W, tk.E, tk.N, tk.S))
+        main_frame.rowconfigure(6, weight=1)
 
         # Redirecionar stdout e stderr para a janela de texto
         sys.stdout = RedirectText(self.output_text)
         sys.stderr = RedirectText(self.output_text)
+
+    def apply_styles(self):
+        style = ttk.Style()
+        style.configure('TButton', font=('Arial', 10))
+        style.configure('TLabel', font=('Arial', 10))
+        style.configure('TEntry', font=('Arial', 10))
+
+    def create_menu(self):
+        menubar = tk.Menu(self.root)
+        self.root.config(menu=menubar)
+
+        help_menu = tk.Menu(menubar, tearoff=0)
+        help_menu.add_command(label="Sobre", command=self.show_about)
+        menubar.add_cascade(label="Ajuda", menu=help_menu)
+
+    def show_about(self):
+        messagebox.showinfo("Sobre", "Planejador de Rotas\nVersão 1.0\nDesenvolvido por [Seu Nome]")
 
     def open_customization_window(self):
         CustomizationWindow(self.root, self.preferences)
@@ -102,10 +126,23 @@ class RoutePlannerGUI:
         try:
             # Obter entradas do usuário
             self.address = self.address_entry.get()
-            self.radius = int(self.radius_entry.get())
-            self.num_destinations = int(self.num_destinations_entry.get())
+            try:
+                self.radius = int(self.radius_entry.get())
+                if self.radius <= 0:
+                    raise ValueError
+            except ValueError:
+                messagebox.showerror("Erro", "Por favor, insira um valor válido para o raio de busca (número inteiro positivo).")
+                return
 
-            # Atualizar preferências (não salvamos 'cuisine' neste ponto)
+            try:
+                self.num_destinations = int(self.num_destinations_entry.get())
+                if self.num_destinations <= 0:
+                    raise ValueError
+            except ValueError:
+                messagebox.showerror("Erro", "Por favor, insira um valor válido para o número de destinos (número inteiro positivo).")
+                return
+
+            # Atualizar preferências
             self.preferences.get_user_input(self.address, self.radius, '', self.num_destinations)
             self.preferences.save_preferences()
 
@@ -113,18 +150,13 @@ class RoutePlannerGUI:
             geocode_result = GeoCoder.geocode_address(self.address)
             if geocode_result is None:
                 messagebox.showerror("Erro", "Endereço não encontrado. Tente novamente.")
-                self.run_button.config(state=tk.NORMAL)
-                self.progress.stop()
-                self.message.set("")
+                logger.warning("Endereço não encontrado.")
                 return
             elif isinstance(geocode_result, list) and len(geocode_result) > 1:
                 # Se múltiplos resultados, permitir que o usuário selecione
                 selected = self.select_address(geocode_result)
                 if selected is None:
                     messagebox.showinfo("Informação", "Nenhum endereço selecionado.")
-                    self.run_button.config(state=tk.NORMAL)
-                    self.progress.stop()
-                    self.message.set("")
                     return
                 else:
                     self.origin_point = (selected[0], selected[1])
@@ -134,7 +166,7 @@ class RoutePlannerGUI:
                 self.origin_point = (geocode_result[0], geocode_result[1])
                 self.origin_address = geocode_result[2]
 
-            print(f"Endereço selecionado: {self.origin_address}")
+            logger.info(f"Endereço selecionado: {self.origin_address}")
 
             # Criar e processar o grafo
             self.graph_handler = GraphHandler(self.origin_point, self.radius)
@@ -142,47 +174,56 @@ class RoutePlannerGUI:
             self.graph_handler.find_origin_node()
             self.graph_handler.print_graph_info()
 
+            # Prosseguir com o restante do processamento
+            threading.Thread(target=self.fetch_cuisines).start()
+
+        except Exception as e:
+            logger.exception(f"Ocorreu um erro no método run: {e}")
+            messagebox.showerror("Erro", f"Ocorreu um erro: {e}")
+        finally:
+            # Reabilitar o botão e parar a barra de progresso
+            self.run_button.config(state=tk.NORMAL)
+            self.progress.stop()
+            self.message.set("")
+
+    def fetch_cuisines(self):
+        try:
             # Buscar estabelecimentos e obter cozinhas disponíveis
             self.poi_finder = POIFinder(
                 self.graph_handler.G_projected,
                 self.origin_point,
                 self.radius
             )
-
-            # Executar get_available_cuisines em uma thread separada
-            def fetch_cuisines():
-                self.poi_finder.get_available_cuisines()
-                cuisines = self.poi_finder.available_cuisines
-                if not cuisines:
-                    messagebox.showwarning("Aviso", "Nenhum tipo de estabelecimento encontrado na área.")
-                    self.run_button.config(state=tk.NORMAL)
-                    self.progress.stop()
-                    self.message.set("")
-                    return
-                else:
-                    selected_cuisine = self.select_cuisine(cuisines)
-                    if selected_cuisine is None:
-                        messagebox.showinfo("Informação", "Nenhuma opção selecionada.")
-                        self.run_button.config(state=tk.NORMAL)
-                        self.progress.stop()
-                        self.message.set("")
-                        return
-                    else:
-                        self.cuisine = selected_cuisine
-                        self.preferences.preferences['cuisine'] = self.cuisine
-                        self.preferences.save_preferences()
-                        self.poi_finder.cuisine = self.cuisine
-
-                        # Prosseguir com o restante do processamento na thread principal
-                        self.after_fetch_cuisines()
-
-            threading.Thread(target=fetch_cuisines).start()
-
+            self.poi_finder.get_available_cuisines()
+            cuisines = self.poi_finder.available_cuisines
+            if not cuisines:
+                self.root.after(0, lambda: messagebox.showwarning("Aviso", "Nenhum tipo de estabelecimento encontrado na área."))
+                return
+            else:
+                # Abrir a janela de seleção de cozinha no thread principal
+                self.root.after(0, lambda: self.select_cuisine_and_proceed(cuisines))
         except Exception as e:
-            print(f"Ocorreu um erro: {e}")
-            messagebox.showerror("Erro", f"Ocorreu um erro: {e}")
-            self.run_button.config(state=tk.NORMAL)
-            self.progress.stop()
+            logger.exception(f"Ocorreu um erro no método fetch_cuisines: {e}")
+            self.root.after(0, lambda: messagebox.showerror("Erro", f"Ocorreu um erro ao buscar estabelecimentos: {e}"))
+        finally:
+            # Reabilitar o botão e parar a barra de progresso
+            self.root.after(0, lambda: self.run_button.config(state=tk.NORMAL))
+            self.root.after(0, lambda: self.progress.stop())
+            self.root.after(0, lambda: self.message.set(""))
+
+    def select_cuisine_and_proceed(self, cuisines):
+        selected_cuisine = self.select_cuisine(cuisines)
+        if selected_cuisine is None:
+            messagebox.showinfo("Informação", "Nenhuma opção selecionada.")
+            return
+        else:
+            self.cuisine = selected_cuisine
+            self.preferences.preferences['cuisine'] = self.cuisine
+            self.preferences.save_preferences()
+            self.poi_finder.cuisine = self.cuisine
+
+            # Prosseguir com o restante do processamento
+            threading.Thread(target=self.after_fetch_cuisines).start()
 
     def after_fetch_cuisines(self):
         try:
@@ -190,20 +231,14 @@ class RoutePlannerGUI:
             self.poi_finder.get_pois()
 
             if not self.poi_finder.destination_nodes:
-                messagebox.showwarning("Aviso", "Nenhum destino encontrado. Tente novamente com outros parâmetros.")
-                self.run_button.config(state=tk.NORMAL)
-                self.progress.stop()
-                self.message.set("")
+                self.root.after(0, lambda: messagebox.showwarning("Aviso", "Nenhum destino encontrado. Tente novamente com outros parâmetros."))
                 return
 
             # Selecionar os destinos mais próximos
             self.selected_nodes, self.selected_names, self.selected_dists = self.select_closest_destinations()
 
             if not self.selected_nodes:
-                messagebox.showwarning("Aviso", "Nenhum destino selecionado. Tente novamente.")
-                self.run_button.config(state=tk.NORMAL)
-                self.progress.stop()
-                self.message.set("")
+                self.root.after(0, lambda: messagebox.showwarning("Aviso", "Nenhum destino selecionado. Tente novamente."))
                 return
 
             # Calcular rotas
@@ -216,6 +251,7 @@ class RoutePlannerGUI:
 
             # Exibir tempos médios
             for alg, avg_time in self.route_calculator.avg_times.items():
+                logger.info(f"Tempo Médio {alg.replace('_', ' ').capitalize()}: {avg_time:.6f} segundos")
                 print(f"Tempo Médio {alg.replace('_', ' ').capitalize()}: {avg_time:.6f} segundos")
 
             # Plotar as rotas
@@ -237,14 +273,15 @@ class RoutePlannerGUI:
                 limit=routes_limit
             )
 
-            self.message.set("Processamento concluído. O mapa foi aberto no navegador.")
+            self.root.after(0, lambda: self.message.set("Processamento concluído. O mapa foi aberto no navegador."))
 
         except Exception as e:
-            print(f"Ocorreu um erro: {e}")
-            messagebox.showerror("Erro", f"Ocorreu um erro: {e}")
+            logger.exception(f"Ocorreu um erro no método after_fetch_cuisines: {e}")
+            self.root.after(0, lambda: messagebox.showerror("Erro", f"Ocorreu um erro: {e}"))
         finally:
-            self.run_button.config(state=tk.NORMAL)
-            self.progress.stop()
+            # Reabilitar o botão e parar a barra de progresso
+            self.root.after(0, lambda: self.run_button.config(state=tk.NORMAL))
+            self.root.after(0, lambda: self.progress.stop())
 
     def select_address(self, addresses):
         """
