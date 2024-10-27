@@ -31,10 +31,8 @@ class RouteCalculator:
                             self.origin_node,
                             target,
                             weight='length',
-                            heuristic=lambda u, v: ox.distance.euclidean(
-                                self.G_projected.nodes[u]['y'], self.G_projected.nodes[u]['x'],
-                                self.G_projected.nodes[v]['y'], self.G_projected.nodes[v]['x']
-                            )
+                            heuristic=lambda u, v: ((self.G_projected.nodes[u]['x'] - self.G_projected.nodes[v]['x'])**2 + 
+                                                    (self.G_projected.nodes[u]['y'] - self.G_projected.nodes[v]['y'])**2) ** 0.5
                         )
                     elif alg == 'bellman_ford':
                         route = nx.bellman_ford_path(self.G_projected, self.origin_node, target, weight='length')
@@ -42,10 +40,8 @@ class RouteCalculator:
                         path = nx.bidirectional_dijkstra(self.G_projected, self.origin_node, target, weight='length')[1]
                         route = path
                     elif alg == 'bidirectional_a_star':
-                        heuristic = lambda u, v: ox.distance.euclidean(
-                            self.G_projected.nodes[u]['y'], self.G_projected.nodes[u]['x'],
-                            self.G_projected.nodes[v]['y'], self.G_projected.nodes[v]['x']
-                        )
+                        heuristic = lambda u, v: ((self.G_projected.nodes[u]['x'] - self.G_projected.nodes[v]['x'])**2 + 
+                                                  (self.G_projected.nodes[u]['y'] - self.G_projected.nodes[v]['y'])**2) ** 0.5
                         route = self.bidirectional_a_star(self.G_projected, self.origin_node, target, heuristic)
                     else:
                         raise ValueError("Algoritmo não suportado.")
