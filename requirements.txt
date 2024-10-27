@@ -83,6 +83,7 @@ pandas==2.2.3
 pandocfilters==1.5.1
 parso==0.8.4
 pefile==2023.2.7
+pillow==11.0.0
 platformdirs==4.3.6
 prometheus_client==0.21.0
 prompt_toolkit==3.0.48
@@ -129,6 +130,7 @@ wcwidth==0.2.13
 webcolors==24.8.0
 webencodings==0.5.1
 websocket-client==1.8.0
+wheel==0.44.0
 whichcraft==0.6.1
 widgetsnbextension==4.0.13
 xyzservices==2024.9.0

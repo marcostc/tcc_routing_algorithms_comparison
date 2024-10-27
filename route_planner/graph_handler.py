@@ -5,7 +5,7 @@ import osmnx as ox
 import geopandas as gpd
 from shapely.geometry import Point
 from pyproj import Transformer
-from .logger import logger
+from route_planner.logger import logger
 
 class GraphHandler:
     def __init__(self, origin_point, radius):

@@ -4,8 +4,8 @@ import time
 import heapq
 import networkx as nx
 
-from .utils import timed
-from .logger import logger
+from route_planner.utils import timed
+from route_planner.logger import logger
 
 class RouteCalculator:
     """

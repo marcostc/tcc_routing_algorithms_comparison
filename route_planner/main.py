@@ -2,7 +2,7 @@
 
 import sys
 
-from .logger import logger
+from route_planner.logger import logger
 
 from route_planner.gui import RoutePlannerGUI
 

@@ -5,7 +5,7 @@ import geopandas as gpd
 from shapely.geometry import Point
 
 # Importar o logger
-from .logger import logger
+from route_planner.logger import logger
 
 class POIFinder:
     """

@@ -6,15 +6,15 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import networkx as nx
 
-from .utils import RedirectText
-from .preferences import UserPreferences
-from .geocoder import GeoCoder
-from .graph_handler import GraphHandler
-from .poi_finder import POIFinder
-from .route_calculator import RouteCalculator
-from .route_plotter import RoutePlotter
-from .customization_window import CustomizationWindow
-from .logger import logger  # Importar o logger
+from route_planner.utils import RedirectText
+from route_planner.preferences import UserPreferences
+from route_planner.geocoder import GeoCoder
+from route_planner.graph_handler import GraphHandler
+from route_planner.poi_finder import POIFinder
+from route_planner.route_calculator import RouteCalculator
+from route_planner.route_plotter import RoutePlotter
+from route_planner.customization_window import CustomizationWindow
+from route_planner.logger import logger  # Importar o logger
 
 class RoutePlannerGUI:
     def __init__(self):
