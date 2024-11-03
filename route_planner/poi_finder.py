@@ -6,6 +6,7 @@ from shapely.geometry import Point
 
 # Importar o logger
 from route_planner.logger import logger
+from collections import Counter
 
 class POIFinder:
     """
@@ -20,11 +21,12 @@ class POIFinder:
         self.destination_nodes = []
         self.destination_coords_geo = []
         self.destination_names = []
-        self.available_cuisines = set()  # Armazena os tipos de estabelecimentos disponíveis
+        self.cuisine_counts = {}  # Dicionário para armazenar tipos de estabelecimentos e suas quantidades
 
     def get_available_cuisines(self):
         """
-        Obtém todos os tipos de estabelecimentos ('cuisine') disponíveis na área especificada.
+        Obtém todos os tipos de estabelecimentos ('cuisine') disponíveis na área especificada,
+        juntamente com a contagem de estabelecimentos para cada tipo.
         """
         # Buscar todos os restaurantes na área
         tags = {'amenity': 'restaurant'}
@@ -40,24 +42,24 @@ class POIFinder:
             logger.info("Nenhum estabelecimento encontrado na área.")
             return
 
-        # Obter todas as tags 'cuisine' disponíveis
+        # Obter todas as tags 'cuisine' disponíveis e contar os estabelecimentos
+        self.cuisine_counts = {}
         if 'cuisine' in pois.columns:
-            cuisines = pois['cuisine'].dropna().unique()
-            # Algumas entradas podem ter múltiplas cozinhas separadas por ';'
-            cuisines_split = [c.strip() for sublist in cuisines for c in sublist.split(';')]
-            self.available_cuisines = set(cuisines_split)
-        else:
-            self.available_cuisines = set()
+            # Expandir as entradas com múltiplas cozinhas separadas por ';'
+            pois['cuisine_list'] = pois['cuisine'].str.split(';')
+            pois['cuisine_list'] = pois['cuisine_list'].apply(lambda x: [c.strip() for c in x] if isinstance(x, list) else [])
 
-        # Se não houver 'cuisine', tentar usar 'name' como alternativa
-        if not self.available_cuisines:
-            print("A coluna 'cuisine' não está presente nos dados ou está vazia.")
+            # Contar as ocorrências de cada 'cuisine'
+            cuisine_list = [cuisine for sublist in pois['cuisine_list'] for cuisine in sublist]
+            self.cuisine_counts = Counter(cuisine_list)
+        else:
+            # Se não houver 'cuisine', tentar usar 'name' como alternativa
             if 'name' in pois.columns:
                 names = pois['name'].dropna().unique()
-                self.available_cuisines = set(names)
+                self.cuisine_counts = {name: 1 for name in names}
             else:
-                print("A coluna 'name' também não está presente.")
-                self.available_cuisines = set()
+                print("As colunas 'cuisine' e 'name' não estão presentes nos dados.")
+                self.cuisine_counts = {}
 
     def get_pois(self):
         """
@@ -80,18 +82,24 @@ class POIFinder:
 
         # Filtrar por 'cuisine' selecionada
         if 'cuisine' in pois.columns:
-            pois = pois[pois['cuisine'].str.contains(self.cuisine, case=False, na=False)]
-            print(f"{len(pois)} estabelecimentos correspondem à busca por '{self.cuisine}'.")
-        else:
-            pois = pois[pois['name'].str.contains(self.cuisine, case=False, na=False)]
-            print(f"{len(pois)} estabelecimentos correspondem à busca por nome contendo '{self.cuisine}'.")
+            # Expandir as entradas com múltiplas cozinhas separadas por ';'
+            pois['cuisine_list'] = pois['cuisine'].str.split(';')
+            pois['cuisine_list'] = pois['cuisine_list'].apply(lambda x: [c.strip() for c in x] if isinstance(x, list) else [])
 
-        if pois.empty:
+            # Filtrar os POIs que contêm a 'cuisine' selecionada
+            pois_filtered = pois[pois['cuisine_list'].apply(lambda x: self.cuisine in x)]
+            print(f"{len(pois_filtered)} estabelecimentos correspondem à busca por '{self.cuisine}'.")
+        else:
+            # Se não houver 'cuisine', usar 'name' como alternativa
+            pois_filtered = pois[pois['name'].str.contains(self.cuisine, case=False, na=False)]
+            print(f"{len(pois_filtered)} estabelecimentos correspondem à busca por nome contendo '{self.cuisine}'.")
+
+        if pois_filtered.empty:
             print("Nenhum estabelecimento correspondente encontrado após filtragem.")
             return
 
         # Reprojetar para o CRS do grafo projetado
-        pois_projected = pois.to_crs(self.G_projected.graph['crs'])
+        pois_projected = pois_filtered.to_crs(self.G_projected.graph['crs'])
 
         # Calcular os centróides
         pois_centroids_projected = pois_projected.geometry.centroid
@@ -107,7 +115,7 @@ class POIFinder:
         )
 
         # Obter nomes dos estabelecimentos
-        self.destination_names = pois['name'].tolist()
+        self.destination_names = pois_projected['name'].tolist()
 
         # Converter para coordenadas geográficas para plotagem
         pois_centroids_geo = pois_centroids_projected.to_crs(epsg=4326)

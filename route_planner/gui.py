@@ -325,24 +325,38 @@ class RoutePlannerGUI:
                 self.radius
             )
             self.poi_finder.get_available_cuisines()
-            cuisines = self.poi_finder.available_cuisines
-            if not cuisines:
+            cuisine_counts = self.poi_finder.cuisine_counts
+            if not cuisine_counts:
                 self.root.after(0, lambda: messagebox.showwarning("Aviso", "Nenhum tipo de estabelecimento encontrado na área."))
                 return
             else:
                 # Abrir a janela de seleção de cozinha no thread principal
-                self.root.after(0, lambda: self.select_cuisine_and_proceed(cuisines))
+                self.root.after(0, lambda: self.select_cuisine_and_proceed(cuisine_counts))
         except Exception as e:
             logger.exception(f"Ocorreu um erro no método fetch_cuisines: {e}")
-            self.root.after(0, lambda: messagebox.showerror("Erro", f"Ocorreu um erro ao buscar estabelecimentos: {e}"))
+            self.root.after(0, lambda e=e: messagebox.showerror("Erro", f"Ocorreu um erro ao buscar estabelecimentos: {e}"))
         finally:
             # Reabilitar o botão e parar a barra de progresso
             self.root.after(0, lambda: self.run_button.config(state=tk.NORMAL))
             self.root.after(0, lambda: self.progress.stop())
             self.root.after(0, lambda: self.message.set(""))
 
-    def select_cuisine_and_proceed(self, cuisines):
-        selected_cuisine = self.select_cuisine(cuisines)
+    def select_cuisine_and_proceed(self, cuisine_counts):
+        selected_cuisine = self.select_cuisine(cuisine_counts)
+        if selected_cuisine is None:
+            messagebox.showinfo("Informação", "Nenhuma opção selecionada.")
+            return
+        else:
+            self.cuisine = selected_cuisine
+            self.preferences.preferences['cuisine'] = self.cuisine
+            self.preferences.save_preferences()
+            self.poi_finder.cuisine = self.cuisine
+
+            # Prosseguir com o restante do processamento
+            threading.Thread(target=self.after_fetch_cuisines).start()
+
+    def select_cuisine_and_proceed_step2(self, cuisine_counts):
+        selected_cuisine = self.select_cuisine(cuisine_counts)
         if selected_cuisine is None:
             messagebox.showinfo("Informação", "Nenhuma opção selecionada.")
             return
@@ -407,7 +421,7 @@ class RoutePlannerGUI:
 
         except Exception as e:
             logger.exception(f"Ocorreu um erro no método after_fetch_cuisines: {e}")
-            self.root.after(0, lambda: messagebox.showerror("Erro", f"Ocorreu um erro: {e}"))
+            self.root.after(0, lambda e=e: messagebox.showerror("Erro", f"Ocorreu um erro: {e}"))
         finally:
             # Reabilitar o botão e parar a barra de progresso
             self.root.after(0, lambda: self.run_button.config(state=tk.NORMAL))
@@ -474,9 +488,10 @@ class RoutePlannerGUI:
         self.root.wait_window(top)
         return selected_address[0]
 
-    def select_cuisine(self, cuisines):
+    def select_cuisine(self, cuisine_counts):
         """
-        Exibe uma janela para o usuário selecionar uma 'cuisine' dentre as opções encontradas.
+        Exibe uma janela para o usuário selecionar uma 'cuisine' dentre as opções encontradas,
+        mostrando a quantidade de estabelecimentos disponíveis para cada uma.
         """
         def on_select():
             selected_item = listbox.curselection()
@@ -498,16 +513,26 @@ class RoutePlannerGUI:
         listbox = tk.Listbox(top)
         listbox.pack(fill=tk.BOTH, expand=True)
 
-        # Inserir as opções no listbox
-        cuisines_list = sorted(cuisines)
+        # Ordenar as opções por nome
+        cuisines_list = sorted(cuisine_counts.keys())
+
+        # Inserir as opções no listbox com as quantidades
         for cuisine in cuisines_list:
-            listbox.insert(tk.END, cuisine)
+            count = cuisine_counts[cuisine]
+            listbox.insert(tk.END, f"{cuisine} ({count} estabelecimentos)")
 
         select_button = ttk.Button(top, text="Selecionar", command=on_select)
         select_button.pack(pady=5)
 
         self.root.wait_window(top)
-        return selected_cuisine[0]
+
+        if selected_cuisine[0]:
+            # Remover a parte da contagem para obter o nome da 'cuisine' selecionada
+            selected_cuisine_name = selected_cuisine[0].split(' (')[0]
+            return selected_cuisine_name
+        else:
+            return None
+
 
     def select_closest_destinations(self):
         G_projected = self.graph_handler.G_projected
