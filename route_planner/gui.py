@@ -18,6 +18,7 @@ from route_planner.route_calculator import RouteCalculator
 from route_planner.route_plotter import RoutePlotter
 from route_planner.customization_window import CustomizationWindow
 from route_planner.logger import logger  # Importar o logger
+from route_planner.data_analyzer import DataAnalyzer
 
 class RoutePlannerGUI:
     def __init__(self):
@@ -140,8 +141,13 @@ class RoutePlannerGUI:
         # Botões
         button_frame = ttk.Frame(self.main_frame)
         button_frame.grid(row=3, column=0, columnspan=2, pady=10)
+
         self.run_button = ttk.Button(button_frame, text="Calcular Rotas", command=self.run_thread)
         self.run_button.pack(side=tk.LEFT, padx=5)
+        # Botão para gerar relatório
+        self.report_button = ttk.Button(button_frame, text="Gerar Relatório", command=self.generate_report)
+        self.report_button.pack(side=tk.LEFT, padx=5)
+
         self.customize_button = ttk.Button(button_frame, text="Personalizar Visualização", command=self.open_customization_window)
         self.customize_button.pack(side=tk.LEFT, padx=5)
 
@@ -627,4 +633,27 @@ class RoutePlannerGUI:
         else:
             # Se não existir, criar e escrever o cabeçalho
             df.to_csv(csv_file, mode='w', index=False)
+
+    def generate_report(self):
+        # Desabilitar o botão durante o processamento
+        self.report_button.config(state=tk.DISABLED)
+        self.message.set("Gerando relatório...")
+
+        try:
+            analyzer = DataAnalyzer()
+            if analyzer.load_data():
+                analyzer.generate_plots()
+                analyzer.perform_statistical_analysis()
+                # Se implementar generate_report(), pode chamá-lo aqui
+                # analyzer.generate_report()
+                messagebox.showinfo("Sucesso", "Relatório gerado com sucesso.\nOs gráficos estão na pasta 'graficos' e a análise estatística em 'analise_estatistica.csv'.")
+            else:
+                messagebox.showerror("Erro", "Não foi possível carregar os dados.\nCertifique-se de que o arquivo 'resultados.csv' existe.")
+        except Exception as e:
+            logger.exception(f"Erro ao gerar o relatório: {e}")
+            messagebox.showerror("Erro", f"Ocorreu um erro ao gerar o relatório: {e}")
+        finally:
+            # Reabilitar o botão
+            self.report_button.config(state=tk.NORMAL)
+            self.message.set("")
 
