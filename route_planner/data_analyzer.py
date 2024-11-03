@@ -1,5 +1,6 @@
 # route_planner/data_analyzer.py
 
+import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -36,10 +37,23 @@ class DataAnalyzer:
 
             for x_var in x_vars:
                 plt.figure(figsize=(8, 6))
-                sns.scatterplot(data=self.data, x=x_var, y=alg_col)
+
+                # Scatterplot com linha de tendência
+                sns.regplot(
+                    data=self.data,
+                    x=x_var,
+                    y=alg_col,
+                    ci=None,  # Não mostrar intervalo de confiança
+                    scatter_kws={'s': 50, 'alpha': 0.7},  # Personalizar pontos
+                    line_kws={'color': 'red'}  # Personalizar linha de tendência
+                )
+
                 plt.title(f'{alg} - Tempo de Execução vs {x_var}')
                 plt.xlabel(x_var)
                 plt.ylabel('Tempo de Execução (s)')
+                plt.legend([f'Linha de Tendência'], loc='upper left')
+
+                # Ajustar os eixos se necessário
                 plt.tight_layout()
 
                 # Salvar o gráfico
@@ -48,6 +62,7 @@ class DataAnalyzer:
                 plt.savefig(filename)
                 plt.close()
                 print(f'Gráfico salvo: {filename}')
+
 
     def perform_statistical_analysis(self):
         if self.data is None:
