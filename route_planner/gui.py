@@ -641,14 +641,11 @@ class RoutePlannerGUI:
 
         try:
             analyzer = DataAnalyzer()
-            if analyzer.load_data():
-                analyzer.generate_plots()
-                analyzer.perform_statistical_analysis()
-                # Se implementar generate_report(), pode chamá-lo aqui
-                # analyzer.generate_report()
-                messagebox.showinfo("Sucesso", "Relatório gerado com sucesso.\nOs gráficos estão na pasta 'graficos' e a análise estatística em 'analise_estatistica.csv'.")
-            else:
-                messagebox.showerror("Erro", "Não foi possível carregar os dados.\nCertifique-se de que o arquivo 'resultados.csv' existe.")
+            analyzer.generate_report()
+            messagebox.showinfo(
+                "Sucesso",
+                "Relatório gerado com sucesso.\nOs gráficos estão na pasta 'graficos' e a análise estatística em 'analise_estatistica.csv'."
+            )
         except Exception as e:
             logger.exception(f"Erro ao gerar o relatório: {e}")
             messagebox.showerror("Erro", f"Ocorreu um erro ao gerar o relatório: {e}")

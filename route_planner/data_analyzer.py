@@ -118,7 +118,115 @@ class DataAnalyzer:
         slope, intercept = np.polyfit(x, y, 1)
         return slope, intercept
 
+    def generate_comparative_plots(self):
+        if self.data is None:
+            print("Os dados não foram carregados.")
+            return
+
+        # Configurar o estilo dos gráficos
+        sns.set(style='whitegrid')
+
+        # Variáveis independentes
+        x_vars = ['Número de Vértices', 'Número de Arestas']
+
+        for x_var in x_vars:
+            plt.figure(figsize=(10, 6))
+
+            # Plotar as curvas de cada algoritmo
+            for alg in self.algorithms:
+                alg_col = f'Tempo Médio {alg} (s)'
+
+                # Ordenar os dados com base na variável independente
+                sorted_data = self.data.sort_values(by=x_var)
+
+                # Remover valores NaN
+                x = sorted_data[x_var].values
+                y = sorted_data[alg_col].values
+                valid_indices = ~(np.isnan(x) | np.isnan(y))
+                x = x[valid_indices]
+                y = y[valid_indices]
+
+                plt.plot(x, y, marker='o', label=alg)
+
+            plt.title(f'Tempo de Execução dos Algoritmos vs {x_var}')
+            plt.xlabel(x_var)
+            plt.ylabel('Tempo de Execução (s)')
+            plt.legend()
+            plt.tight_layout()
+
+            # Salvar o gráfico
+            filename = f'graficos/Comparativo_{x_var.replace(" ", "_")}.png'
+            os.makedirs('graficos', exist_ok=True)
+            plt.savefig(filename)
+            plt.close()
+            print(f'Gráfico comparativo salvo: {filename}')
+
     def generate_report(self):
-        # Método para gerar um relatório consolidado
-        # Pode ser implementado para gerar um PDF ou HTML com os gráficos e resultados
-        pass
+        # Carregar os dados
+        if not self.load_data():
+            return
+
+        # Gerar gráficos individuais
+        self.generate_plots()
+
+        # Gerar gráficos comparativos
+        self.generate_comparative_plots()
+
+        # Gerar o gráfico 3D
+        self.generate_3d_plot()
+
+        # Realizar análise estatística
+        self.perform_statistical_analysis()
+
+        # TODO: implementar a geração de um relatório consolidado, se desejado
+
+    def generate_3d_plot(self):
+        if self.data is None:
+            print("Os dados não foram carregados.")
+            return
+
+        # Configurar o estilo dos gráficos
+        sns.set(style='whitegrid')
+
+        # Remover valores NaN e preparar os dados
+        valid_data = self.data.dropna(subset=['Número de Vértices', 'Número de Arestas'])
+        V = valid_data['Número de Vértices'].values
+        E = valid_data['Número de Arestas'].values
+
+        # Criar uma figura 3D
+        fig = plt.figure(figsize=(10, 8))
+        ax = fig.add_subplot(111, projection='3d')
+
+        # Escolher um conjunto de cores para os algoritmos
+        colors = plt.cm.get_cmap('tab10', len(self.algorithms))
+
+        # Plotar os tempos de execução para cada algoritmo
+        for idx, alg in enumerate(self.algorithms):
+            alg_col = f'Tempo Médio {alg} (s)'
+            T = valid_data[alg_col].values
+
+            # Verificar se há valores NaN nos tempos de execução
+            valid_indices = ~np.isnan(T)
+            V_valid = V[valid_indices]
+            E_valid = E[valid_indices]
+            T_valid = T[valid_indices]
+
+            # Plotar os pontos 3D
+            ax.scatter(V_valid, E_valid, T_valid, color=colors(idx), label=alg, s=50)
+
+        # Configurações do gráfico
+        ax.set_title('Tempos de Execução dos Algoritmos em Função de Vértices e Arestas')
+        ax.set_xlabel('Número de Vértices')
+        ax.set_ylabel('Número de Arestas')
+        ax.set_zlabel('Tempo de Execução (s)')
+        ax.legend()
+
+        plt.tight_layout()
+
+        # Salvar o gráfico
+        filename = 'graficos/Tempos_Execucao_3D.png'
+        os.makedirs('graficos', exist_ok=True)
+        plt.savefig(filename)
+        plt.close()
+        print(f'Gráfico 3D salvo: {filename}')
+
