@@ -6,6 +6,8 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import networkx as nx
 from PIL import Image, ImageTk
+import pandas as pd
+import os
 
 from route_planner.utils import RedirectText
 from route_planner.preferences import UserPreferences
@@ -417,7 +419,11 @@ class RoutePlannerGUI:
                 limit=routes_limit
             )
 
-            self.root.after(0, lambda: self.message.set("Processamento concluído. O mapa foi aberto no navegador."))
+            # Salvar os resultados
+            self.save_results()
+            logger.info("Resultados salvos com sucesso.")
+
+            self.root.after(0, lambda: self.message.set("Processamento concluído. O mapa foi aberto no navegador. Resultados salvos."))
 
         except Exception as e:
             logger.exception(f"Ocorreu um erro no método after_fetch_cuisines: {e}")
@@ -533,7 +539,6 @@ class RoutePlannerGUI:
         else:
             return None
 
-
     def select_closest_destinations(self):
         G_projected = self.graph_handler.G_projected
         origin_node = self.graph_handler.origin_node
@@ -586,3 +591,40 @@ class RoutePlannerGUI:
 
         # Atualizar a configuração da grade
         main_frame.rowconfigure(7, weight=0)
+
+    def save_results(self):
+        """
+        Salva os resultados em um arquivo CSV para análise posterior.
+        """
+        # Dados a serem salvos
+        data = {
+            'Endereço de Origem': self.origin_address,
+            'Latitude': self.origin_point[0],
+            'Longitude': self.origin_point[1],
+            'Raio de Busca (m)': self.radius,
+            'Tipo de Estabelecimento': self.cuisine,
+            'Número de Vértices': self.graph_handler.G_projected.number_of_nodes(),
+            'Número de Arestas': self.graph_handler.G_projected.number_of_edges(),
+            'Densidade do Grafo': self.graph_handler.graph_density,
+        }
+
+        # Adicionar os tempos médios de cada algoritmo
+        for alg in self.algorithms:
+            alg_name = alg.replace('_', ' ').capitalize()
+            avg_time = self.route_calculator.avg_times.get(alg, None)
+            data[f'Tempo Médio {alg_name} (s)'] = avg_time
+
+        # Criar um DataFrame com uma única linha
+        df = pd.DataFrame([data])
+
+        # Nome do arquivo CSV
+        csv_file = 'resultados.csv'
+
+        # Verificar se o arquivo já existe
+        if os.path.isfile(csv_file):
+            # Se existir, anexar sem escrever o cabeçalho
+            df.to_csv(csv_file, mode='a', index=False, header=False)
+        else:
+            # Se não existir, criar e escrever o cabeçalho
+            df.to_csv(csv_file, mode='w', index=False)
+
