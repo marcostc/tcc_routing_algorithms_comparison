@@ -19,6 +19,11 @@ build/
 # Aplication executables
 output/
 
+# Graphics
+graficos/
+
+# Log files
+*.Log
 
 # User preferences
 user_preferences.json
