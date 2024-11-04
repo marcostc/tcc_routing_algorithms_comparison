@@ -52,6 +52,7 @@ class RoutePlannerGUI:
 
     def load_images(self):
         import io
+        import os  # Importar o módulo os
         import requests
         from PIL import Image, ImageTk
 
@@ -77,9 +78,16 @@ class RoutePlannerGUI:
                 response = requests.get(calculate_icon_url, timeout=5)
                 response.raise_for_status()
                 image_data = response.content
-                image = Image.open(io.BytesIO(image_data)).resize((20, 20))
-                self.calculate_icon = ImageTk.PhotoImage(image)
+                image = Image.open(io.BytesIO(image_data))
+                resized_image = image.resize((20, 20))
+                self.calculate_icon = ImageTk.PhotoImage(resized_image)
                 logger.info("Ícone 'calculate' baixado com sucesso da internet.")
+
+                # Criar a pasta 'icons' se não existir
+                os.makedirs('icons', exist_ok=True)
+                # Salvar a imagem no disco
+                image.save(calculate_icon_path)
+                logger.info("Ícone 'calculate' salvo localmente com sucesso.")
             except Exception as e:
                 logger.error(f"Erro ao baixar o ícone 'calculate' da internet: {e}")
                 self.calculate_icon = None
@@ -98,9 +106,16 @@ class RoutePlannerGUI:
                 response = requests.get(customize_icon_url, timeout=5)
                 response.raise_for_status()
                 image_data = response.content
-                image = Image.open(io.BytesIO(image_data)).resize((20, 20))
-                self.customize_icon = ImageTk.PhotoImage(image)
+                image = Image.open(io.BytesIO(image_data))
+                resized_image = image.resize((20, 20))
+                self.customize_icon = ImageTk.PhotoImage(resized_image)
                 logger.info("Ícone 'customize' baixado com sucesso da internet.")
+
+                # Criar a pasta 'icons' se não existir
+                os.makedirs('icons', exist_ok=True)
+                # Salvar a imagem no disco
+                image.save(customize_icon_path)
+                logger.info("Ícone 'customize' salvo localmente com sucesso.")
             except Exception as e:
                 logger.error(f"Erro ao baixar o ícone 'customize' da internet: {e}")
                 self.customize_icon = None
@@ -185,7 +200,7 @@ class RoutePlannerGUI:
         menubar.add_cascade(label="Ajuda", menu=help_menu)
 
     def show_about(self):
-        messagebox.showinfo("Sobre", "Planejador de Rotas\nVersão 1.0\nDesenvolvido por [Seu Nome]")
+        messagebox.showinfo("Sobre", "Planejador de Rotas\nVersão 1.0\nDesenvolvido por Marcos Teixeira Câmara")
 
     def open_customization_window(self):
         CustomizationWindow(self.root, self.preferences)
