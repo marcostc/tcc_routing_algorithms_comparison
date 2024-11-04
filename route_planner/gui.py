@@ -3,7 +3,7 @@
 import sys
 import threading
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import ttk, messagebox, Button
 import networkx as nx
 from PIL import Image, ImageTk
 import pandas as pd
@@ -52,75 +52,59 @@ class RoutePlannerGUI:
 
     def load_images(self):
         import io
-        import os  # Importar o módulo os
+        import os
         import requests
         from PIL import Image, ImageTk
 
         # Caminhos locais dos ícones
         calculate_icon_path = 'icons/calculate.png'
         customize_icon_path = 'icons/customize.png'
+        report_icon_path = 'icons/report.png'  # Novo ícone
 
         # URLs dos ícones na internet
         calculate_icon_url = 'https://img.icons8.com/ios-filled/50/000000/route.png'
         customize_icon_url = 'https://img.icons8.com/ios-filled/50/000000/settings.png'
+        report_icon_url = 'https://img.icons8.com/?size=50&id=4uuqSOuAOAxP&format=png&color=000000'  # URL do novo ícone
 
-        # Carregar ícone 'calculate'
-        self.calculate_icon = None
-        try:
-            # Tentar carregar localmente
-            self.calculate_icon = ImageTk.PhotoImage(Image.open(calculate_icon_path).resize((20, 20)))
-            logger.info("Ícone 'calculate' carregado localmente com sucesso.")
-        except Exception as e:
-            logger.warning(f"Não foi possível carregar o ícone 'calculate' localmente: {e}")
-            # Tentar baixar da internet
+        # Criar a pasta 'icons' se não existir
+        os.makedirs('icons', exist_ok=True)
+
+        # Função auxiliar para carregar e salvar ícones
+        def load_icon(icon_path, icon_url, icon_name):
             try:
-                logger.info("Tentando baixar o ícone 'calculate' da internet...")
-                response = requests.get(calculate_icon_url, timeout=5)
-                response.raise_for_status()
-                image_data = response.content
-                image = Image.open(io.BytesIO(image_data))
-                resized_image = image.resize((20, 20))
-                self.calculate_icon = ImageTk.PhotoImage(resized_image)
-                logger.info("Ícone 'calculate' baixado com sucesso da internet.")
-
-                # Criar a pasta 'icons' se não existir
-                os.makedirs('icons', exist_ok=True)
-                # Salvar a imagem no disco
-                image.save(calculate_icon_path)
-                logger.info("Ícone 'calculate' salvo localmente com sucesso.")
+                # Tentar carregar localmente
+                icon_image = ImageTk.PhotoImage(Image.open(icon_path).resize((20, 20)))
+                logger.info(f"Ícone '{icon_name}' carregado localmente com sucesso.")
+                return icon_image
             except Exception as e:
-                logger.error(f"Erro ao baixar o ícone 'calculate' da internet: {e}")
-                self.calculate_icon = None
+                logger.warning(f"Não foi possível carregar o ícone '{icon_name}' localmente: {e}")
+                # Tentar baixar da internet
+                try:
+                    logger.info(f"Tentando baixar o ícone '{icon_name}' da internet...")
+                    response = requests.get(icon_url, timeout=5)
+                    response.raise_for_status()
+                    image_data = response.content
+                    image = Image.open(io.BytesIO(image_data))
+                    resized_image = image.resize((20, 20))
+                    icon_image = ImageTk.PhotoImage(resized_image)
+                    logger.info(f"Ícone '{icon_name}' baixado com sucesso da internet.")
+                    # Salvar a imagem no disco
+                    image.save(icon_path)
+                    logger.info(f"Ícone '{icon_name}' salvo localmente com sucesso.")
+                    return icon_image
+                except Exception as e:
+                    logger.error(f"Erro ao baixar o ícone '{icon_name}' da internet: {e}")
+                    return None
 
-        # Carregar ícone 'customize'
-        self.customize_icon = None
-        try:
-            # Tentar carregar localmente
-            self.customize_icon = ImageTk.PhotoImage(Image.open(customize_icon_path).resize((20, 20)))
-            logger.info("Ícone 'customize' carregado localmente com sucesso.")
-        except Exception as e:
-            logger.warning(f"Não foi possível carregar o ícone 'customize' localmente: {e}")
-            # Tentar baixar da internet
-            try:
-                logger.info("Tentando baixar o ícone 'customize' da internet...")
-                response = requests.get(customize_icon_url, timeout=5)
-                response.raise_for_status()
-                image_data = response.content
-                image = Image.open(io.BytesIO(image_data))
-                resized_image = image.resize((20, 20))
-                self.customize_icon = ImageTk.PhotoImage(resized_image)
-                logger.info("Ícone 'customize' baixado com sucesso da internet.")
-
-                # Criar a pasta 'icons' se não existir
-                os.makedirs('icons', exist_ok=True)
-                # Salvar a imagem no disco
-                image.save(customize_icon_path)
-                logger.info("Ícone 'customize' salvo localmente com sucesso.")
-            except Exception as e:
-                logger.error(f"Erro ao baixar o ícone 'customize' da internet: {e}")
-                self.customize_icon = None
+        # Carregar ícones
+        self.calculate_icon = load_icon(calculate_icon_path, calculate_icon_url, 'calculate')
+        self.customize_icon = load_icon(customize_icon_path, customize_icon_url, 'customize')
+        self.report_icon = load_icon(report_icon_path, report_icon_url, 'report')  # Carregar o novo ícone
 
     def create_widgets(self):
+        # Certifique-se de que as imagens foram carregadas
+        self.load_images()
+
         # Frame principal
         self.main_frame = ttk.Frame(self.root, padding="10")
         self.main_frame.grid(row=0, column=0, sticky=(tk.N, tk.S, tk.E, tk.W))
@@ -157,13 +141,34 @@ class RoutePlannerGUI:
         button_frame = ttk.Frame(self.main_frame)
         button_frame.grid(row=3, column=0, columnspan=2, pady=10)
 
-        self.run_button = ttk.Button(button_frame, text="Calcular Rotas", command=self.run_thread)
+        # Botão "Calcular Rotas" com ícone
+        self.run_button = ttk.Button(
+            button_frame,
+            text=" Calcular Rotas",
+            command=self.run_thread,
+            image=self.calculate_icon,
+            compound=tk.LEFT
+        )
         self.run_button.pack(side=tk.LEFT, padx=5)
-        # Botão para gerar relatório
-        self.report_button = ttk.Button(button_frame, text="Gerar Relatório", command=self.generate_report)
+
+        # Botão "Gerar Relatório" com ícone usando tk.Button
+        self.report_button = tk.Button(
+            button_frame,
+            text=" Gerar Relatório",
+            command=self.generate_report,
+            image=self.report_icon,
+            compound=tk.LEFT
+        )
         self.report_button.pack(side=tk.LEFT, padx=5)
 
-        self.customize_button = ttk.Button(button_frame, text="Personalizar Visualização", command=self.open_customization_window)
+        # Botão "Personalizar Visualização" com ícone
+        self.customize_button = ttk.Button(
+            button_frame,
+            text=" Personalizar Visualização",
+            command=self.open_customization_window,
+            image=self.customize_icon,
+            compound=tk.LEFT
+        )
         self.customize_button.pack(side=tk.LEFT, padx=5)
 
         # Barra de progresso
@@ -179,11 +184,9 @@ class RoutePlannerGUI:
         self.output_text.grid(row=6, column=0, columnspan=2, sticky=(tk.W, tk.E, tk.N, tk.S))
         self.main_frame.rowconfigure(6, weight=1)
 
-        # Redirecionar stdout e stderr para a janela de texto
+        # Redirecionar stdout para a janela de texto
         sys.stdout = RedirectText(self.output_text)
 
-        # Não redirecionar o stderr
-        # sys.stderr = RedirectText(self.output_text)
 
     def apply_styles(self):
         style = ttk.Style()
