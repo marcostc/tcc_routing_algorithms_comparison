@@ -1,0 +1,93 @@
+https://www.plantuml.com
+
+@startuml
+!define RECTANGLE rectangle
+
+start
+
+:Configuração dos Parâmetros;
+note right
+  - Endereço de Origem
+  - Raio de Busca
+  - Tipo de Estabelecimento
+  - Número de Destinos
+end note
+
+:Executar Algoritmos de Roteamento;
+fork
+  :Dijkstra;
+fork again
+  :A*;
+fork again
+  :Bellman-Ford;
+fork again
+  :Dijkstra Bidirecional;
+fork again
+  :A* Bidirecional;
+end fork
+
+:Registrar Dados;
+note right
+  - Endereço e Coordenadas Geográficas
+  - Raio de Busca
+  - Tipo de Estabelecimento
+  - Número de Vértices e Arestas
+  - Densidade do Grafo (d = 2E / (V*(V-1)))
+  - Tempos de Execução dos Algoritmos
+end note
+
+:Análise dos Dados;
+fork
+  :Gerar Gráficos de Dispersão;
+fork again
+  :Gerar Gráficos Comparativos;
+fork again
+  :Gerar Gráficos Tridimensionais;
+end fork
+
+:Personalização dos Gráficos;
+note right
+  - Linhas de Tendência
+  - Legendas e Rótulos
+  - Ajuste de Eixos
+  - Cores e Marcadores Diferenciados
+end note
+
+:Geração de Relatórios Automatizados;
+note right
+  - Inclusão de Gráficos e Tabelas
+  - Facilitação da Interpretação dos Dados
+end note
+
+:Validação dos Resultados;
+fork
+  :Execuções Repetidas;
+fork again
+  :Controle de Variáveis Externas;
+fork again
+  :Análise de Outliers;
+end fork
+
+:Considerações Éticas e de Confiabilidade;
+note right
+  - Uso de Dados de Domínio Público
+  - Transparência Metodológica
+  - Confidencialidade de Dados Sensíveis
+end note
+
+:Reconhecimento das Limitações da Metodologia;
+note right
+  - Ambiente de Execução Específico
+  - Variabilidade das Redes Viárias
+  - Simplificações no Modelo de Grafo
+end note
+
+:Preparação para Replicação do Estudo;
+note right
+  - Disponibilização do Código Fonte no GitHub
+  - Documentação de Instalação e Uso
+  - Compartilhamento dos Dados Coletados
+end note
+
+stop
+@enduml

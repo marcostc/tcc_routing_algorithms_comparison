@@ -1,0 +1,217 @@
+@startuml
+hide empty members
+skinparam classAttributeIconSize 0
+
+' Definir os estilos para as setas de composição e agregação
+skinparam class {
+    BackgroundColor<<interface>> LightYellow
+    BackgroundColor<<abstract>> LightGray
+}
+
+' Classes principais
+class RoutePlannerGUI {
+    - root : Tk
+    - preferences : UserPreferences
+    - address : String
+    - radius : int
+    - cuisine : String
+    - num_destinations : int
+    - origin_point : (float, float)
+    - origin_address : String
+    - graph_handler : GraphHandler
+    - poi_finder : POIFinder
+    - route_calculator : RouteCalculator
+    - route_plotter : RoutePlotter
+    - selected_coords_geo : List[(float, float)]
+    - selected_names : List[String]
+    - selected_dists : List[float]
+    - selected_nodes : List[int]
+    - algorithms : List[String]
+    - message : StringVar
+    - run_button : ttk.Button
+    - report_button : ttk.Button
+    - progress : ttk.Progressbar
+
+    + __init__()
+    + create_widgets()
+    + apply_styles()
+    + load_images()
+    + run_thread()
+    + run()
+    + validate_inputs()
+    + fetch_cuisines()
+    + select_cuisine_and_proceed(cuisine_counts)
+    + after_fetch_cuisines()
+    + select_address(addresses) : String
+    + select_cuisine(cuisine_counts) : String
+    + select_closest_destinations()
+    + create_tooltip(widget, text)
+    + open_customization_window()
+    + show_about()
+    + save_results()
+    + generate_report()
+}
+
+class UserPreferences {
+    - filename : String
+    - preferences : Dict
+    - preferences_file : String
+
+    + __init__(filename=None)
+    + get_user_input()
+    + save_preferences()
+    + load_preferences()
+    + default_visualization_preferences()
+}
+
+class GeoCoder {
+    + geocode_address(address) : Tuple[float, float]
+}
+
+class GraphHandler {
+    - origin_point : (float, float)
+    - radius : int
+    - G : networkx.Graph
+    - G_projected : networkx.Graph
+    - transformer : Transformer
+    - origin_node : int
+    - graph_density : float
+
+    + __init__(origin_point, radius)
+    + create_graph()
+    + find_origin_node()
+    + print_graph_info()
+}
+
+class POIFinder {
+    - G_projected : networkx.Graph
+    - origin_point_geo : (float, float)
+    - radius : int
+    - cuisine : String
+    - cuisine_counts : Dict[String, int]
+    - destination_nodes : List[int]
+    - destination_names : List[String]
+    - destination_coords_geo : List[(float, float)]
+
+    + __init__(G_projected, origin_point_geo, radius)
+    + get_available_cuisines()
+    + get_pois()
+}
+
+class RouteCalculator {
+    - G : networkx.Graph
+    - origin_node : int
+    - destination_nodes : List[int]
+    - routes : Dict[String, List]
+    - avg_times : Dict[String, float]
+
+    + __init__(G, origin_node, destination_nodes)
+    + calculate_routes(algorithms)
+    + calculate_route(algorithm, destination_node)
+}
+
+class RoutePlotter {
+    - G_projected : networkx.Graph
+    - transformer : Transformer
+    - visualization_prefs : Dict
+
+    + __init__(G_projected, transformer, visualization_prefs)
+    + get_dash_array(style)
+    + plot_routes_subset(origin_point, routes, destination_coords_geo, destination_names, destination_dists, algorithms, limit)
+    + generate_unique_filename(base_filename)
+}
+
+class CustomizationWindow {
+    - parent : Tk
+    - preferences : UserPreferences
+    - algorithms : List[String]
+    - color_vars : Dict
+    - style_vars : Dict
+
+    + __init__(parent, preferences)
+    + save_preferences()
+    + create_widgets()
+}
+
+class DataAnalyzer {
+    - csv_file : String
+    - data : pandas.DataFrame
+    - algorithms : List[String]
+
+    + __init__(csv_file='resultados.csv')
+    + load_data() : bool
+    + generate_plots()
+    + generate_comparative_plots()
+    + generate_3d_plot()
+    + perform_statistical_analysis()
+    + generate_report()
+    + linear_regression(x, y) : Tuple[float, float]
+}
+
+' Classes auxiliares
+class RedirectText {
+    + write(str)
+    + flush()
+}
+
+class Logger {
+    + setup_logger(name, log_file, level)
+}
+
+' Relações entre as classes
+RoutePlannerGUI "1" o-- "1" UserPreferences : utiliza
+RoutePlannerGUI "1" ..> "1" GraphHandler : cria
+RoutePlannerGUI "1" ..> "1" POIFinder : cria
+RoutePlannerGUI "1" ..> "1" RouteCalculator : cria
+RoutePlannerGUI "1" ..> "1" RoutePlotter : cria
+RoutePlannerGUI "1" ..> "1" CustomizationWindow : cria
+RoutePlannerGUI "1" ..> "1" DataAnalyzer : utiliza
+RoutePlannerGUI "1" ..> "1" GeoCoder : utiliza
+RoutePlannerGUI "1" ..> "1" RedirectText : utiliza
+
+GraphHandler "1" o-- "1" GeoCoder : utiliza
+
+POIFinder "1" o-- "1" GraphHandler : utiliza
+RouteCalculator "1" o-- "1" GraphHandler : utiliza
+RouteCalculator "1" o-- "1" POIFinder : utiliza
+RoutePlotter "1" o-- "1" GraphHandler : utiliza
+RoutePlotter "1" ..> "1" RouteCalculator : utiliza
+RoutePlotter "1" ..> "1" UserPreferences : utiliza
+
+CustomizationWindow "1" ..> "1" UserPreferences : modifica
+
+DataAnalyzer "1" ..> "1" pandas.DataFrame : utiliza
+DataAnalyzer "1" ..> "1" matplotlib.pyplot : utiliza
+DataAnalyzer "1" ..> "1" seaborn : utiliza
+DataAnalyzer "1" ..> "1" numpy : utiliza
+DataAnalyzer "1" ..> "1" scipy.stats : utiliza
+
+' Classes auxiliares não conectadas diretamente
+Logger ..> RoutePlannerGUI
+Logger ..> GraphHandler
+Logger ..> POIFinder
+Logger ..> RouteCalculator
+Logger ..> RoutePlotter
+Logger ..> DataAnalyzer
+
+' Definição das classes externas (simplificadas)
+class "networkx.Graph" as Graph <<external>> {
+    ...
+}
+
+class "Transformer" <<external>> {
+    ...
+}
+
+class "pandas.DataFrame" <<external>> {
+    ...
+}
+
+' Agrupamento de bibliotecas externas
+package "Bibliotecas Externas" {
+    class "networkx.Graph" as Graph <<external>>
+    class "Transformer" <<external>>
+    class "pandas.DataFrame" <<external>>
+}
+
+@enduml
